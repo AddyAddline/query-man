@@ -48,7 +48,13 @@ const EditorContainer = styled.div`
 `;
 
 // Simple textarea for immediate display while Monaco loads
-const SimpleTextarea = styled.textarea`
+// Ensure paste functionality works by removing any restrictive properties
+const SimpleTextarea = styled.textarea.attrs({
+  readOnly: false,
+  autoComplete: "on",
+  spellCheck: "true",
+  autoCorrect: "on",
+})`
   width: 100%;
   height: 100%;
   padding: 12px;
@@ -63,6 +69,10 @@ const SimpleTextarea = styled.textarea`
   tab-size: 2;
   outline: none;
   display: block;
+  user-select: text !important;
+  -webkit-user-select: text !important;
+  -moz-user-select: text !important;
+  -ms-user-select: text !important;
 
   &:focus {
     box-shadow: inset 0 0 0 1px ${({ theme }) => theme.primary};
@@ -157,6 +167,53 @@ const SQLEditor = memo(
       }
     };
 
+    // Handle paste event explicitly to ensure it works
+    const handlePaste = () => {
+      // We don't need to do anything special here, just ensure
+      // we don't prevent the default behavior
+    };
+
+    // Fix any paste prevention after mounting
+    useEffect(() => {
+      // This function ensures pasting works in the editor
+      const fixPastePrevention = () => {
+        // Find all textareas within our component
+        const container = document.querySelector(".editor-container");
+        if (!container) return;
+
+        const textareas = container.querySelectorAll("textarea, .inputarea");
+        textareas.forEach((textarea) => {
+          // Ensure user-select is set to text
+          textarea.style.userSelect = "text";
+          textarea.style.webkitUserSelect = "text";
+          textarea.style.msUserSelect = "text";
+          textarea.style.mozUserSelect = "text";
+
+          // Remove readonly attribute if present
+          textarea.removeAttribute("readonly");
+
+          // Add paste event listener
+          textarea.addEventListener(
+            "paste",
+            () => {
+              // Allow default paste behavior
+            },
+            true
+          );
+        });
+      };
+
+      // Run initially and with a delay to catch Monaco editor elements
+      fixPastePrevention();
+      const timer1 = setTimeout(fixPastePrevention, 500);
+      const timer2 = setTimeout(fixPastePrevention, 1500);
+
+      return () => {
+        clearTimeout(timer1);
+        clearTimeout(timer2);
+      };
+    }, [monacoLoaded]);
+
     const executeQuery = () => {
       onExecuteQuery(query);
     };
@@ -170,8 +227,24 @@ const SQLEditor = memo(
     };
 
     // Handle when editor is fully mounted
-    const handleEditorDidMount = () => {
+    const handleEditorDidMount = (editor) => {
       setMonacoLoaded(true);
+
+      // Ensure paste works in Monaco editor
+      if (editor) {
+        const editorDomNode = editor.getDomNode();
+        if (editorDomNode) {
+          const textareas = editorDomNode.querySelectorAll(
+            "textarea, .inputarea"
+          );
+          textareas.forEach((textarea) => {
+            // Remove any attributes that might prevent pasting
+            textarea.removeAttribute("readonly");
+            textarea.style.userSelect = "text";
+            textarea.style.webkitUserSelect = "text";
+          });
+        }
+      }
     };
 
     // Basic editor options for initial load
@@ -191,6 +264,11 @@ const SQLEditor = memo(
       cursorSmoothCaretAnimation: "on",
       bracketPairColorization: { enabled: true },
       renderLineHighlight: "all",
+      // Ensure clipboard functionality works
+      readOnly: false,
+      quickSuggestions: true,
+      // Make paste work
+      accessibilitySupport: "off",
     };
 
     return (
@@ -205,11 +283,15 @@ const SQLEditor = memo(
             value={query}
             onChange={handleTextareaChange}
             onKeyDown={handleKeyDown}
+            onPaste={handlePaste}
             spellCheck="false"
             className="sc-eNhQl"
             placeholder="Enter SQL query here..."
             data-loading="eager"
             loading="eager"
+            readOnly={false}
+            autoComplete="on"
+            aria-label="SQL query editor"
           />
         )}
 

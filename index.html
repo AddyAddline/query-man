@@ -61,7 +61,76 @@
       margin: 0;
       padding: 0;
     }
+
+    /* Ensure all input fields allow pasting */
+    input,
+    textarea,
+    [contenteditable="true"] {
+      user-select: text !important;
+      -webkit-user-select: text !important;
+    }
+
+    /* Fix Monaco editor paste prevention */
+    .monaco-editor .inputarea {
+      user-select: text !important;
+      -webkit-user-select: text !important;
+      -ms-user-select: text !important;
+    }
   </style>
+
+  <!-- Ensure pasting is always allowed -->
+  <script>
+    // Override paste prevention on all input elements
+    document.addEventListener('DOMContentLoaded', function () {
+      // Remove paste prevention on all current and future input elements
+      const removeAllPastePrevention = function () {
+        // Target all elements that might have paste prevention
+        const elements = document.querySelectorAll('input, textarea, [contenteditable="true"], .monaco-editor textarea, .monaco-editor .inputarea');
+
+        elements.forEach(function (el) {
+          // Enable user-select explicitly
+          el.style.userSelect = 'text';
+          el.style.webkitUserSelect = 'text';
+
+          // Remove potential readonly attributes when they shouldn't be there
+          if (el.getAttribute('role') === 'textbox') {
+            el.removeAttribute('readonly');
+          }
+
+          // Ensure autocomplete attributes don't interfere with pasting
+          if (el.getAttribute('autocomplete') === 'off') {
+            // We're just going to let it have autocomplete="off" but still ensure pasting works
+          }
+
+          // Override any existing paste event listeners that might prevent pasting
+          el.addEventListener('paste', function (e) {
+            // This will run first and allow paste operations
+            e.stopPropagation(); // Don't stop immediate propagation as that could break functionality
+          }, true);
+        });
+      };
+
+      // Initial execution
+      removeAllPastePrevention();
+
+      // Set up a MutationObserver to handle dynamically added elements
+      const observer = new MutationObserver(function (mutations) {
+        removeAllPastePrevention();
+      });
+
+      // Start observing the document with the configured parameters
+      observer.observe(document.body, {
+        childList: true,
+        subtree: true,
+        attributes: true,
+        attributeFilter: ['readonly', 'autocomplete', 'onpaste']
+      });
+
+      // For Monaco editor, needs a delay to initialize fully
+      setTimeout(removeAllPastePrevention, 1000);
+      setTimeout(removeAllPastePrevention, 2000);
+    });
+  </script>
 </head>
 
 <body>
