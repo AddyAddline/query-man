@@ -1,0 +1,48 @@
+/* Reset root styles to work with our layout */
+#root {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Ensure app container takes full height */
+.app-container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+}
+
+/* Fix tabs styling */
+[role="tab"] {
+  appearance: none;
+  padding: 0;
+  background: none;
+}
+
+/* Ensure table components take proper space */
+.table-wrapper {
+  flex: 1;
+  overflow: auto;
+  width: 100%;
+}
+
+/* Monaco editor fixes */
+.monaco-editor {
+  width: 100% !important;
+}
+
+.monaco-editor .overflow-guard {
+  width: 100% !important;
+}
+
+/* Override Vite default styles */
+.vite-styles-reset {
+  all: unset;
+}
