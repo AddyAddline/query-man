@@ -7,10 +7,15 @@ import App from "./App.jsx";
 const preloadCriticalModules = () => {
   // Preload the Monaco Editor as it's the LCP element
   const preloadMonaco = () => {
-    const link = document.createElement("link");
-    link.rel = "modulepreload";
-    link.href = "/node_modules/@monaco-editor/react/dist/esm/index.js";
-    document.head.appendChild(link);
+    // Instead of direct node_modules path, use the same path as in the import
+    // This allows Vite to resolve it correctly
+    try {
+      import("@monaco-editor/react")
+        .then(() => console.log("Monaco editor preloaded successfully"))
+        .catch((err) => console.warn("Monaco editor preload failed:", err));
+    } catch (e) {
+      console.warn("Module preloading not supported", e);
+    }
   };
 
   // Add font preload
@@ -24,19 +29,21 @@ const preloadCriticalModules = () => {
   };
 
   // Execute preloads
-  requestIdleCallback(() => {
-    preloadMonaco();
-    preloadFonts();
-  });
+  if ("requestIdleCallback" in window) {
+    requestIdleCallback(() => {
+      preloadMonaco();
+      preloadFonts();
+    });
+  } else {
+    setTimeout(() => {
+      preloadMonaco();
+      preloadFonts();
+    }, 1000);
+  }
 };
 
-// Start preloading during idle time
-if ("requestIdleCallback" in window) {
-  preloadCriticalModules();
-} else {
-  // Fallback for browsers that don't support requestIdleCallback
-  setTimeout(preloadCriticalModules, 1000);
-}
+// Start preloading immediately
+preloadCriticalModules();
 
 createRoot(document.getElementById("root")).render(
   <StrictMode>
