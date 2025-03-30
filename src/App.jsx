@@ -752,6 +752,108 @@ const FullScreenButton = styled.button`
   }
 `;
 
+// Create a ClearButton component for clear all functionality
+const ClearButton = styled.button`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  color: ${({ theme }) => theme.text.secondary};
+  padding: 4px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  gap: 4px;
+  transition: all 0.2s;
+
+  &:hover {
+    background: ${({ theme }) => theme.hover};
+    color: ${({ theme }) => theme.error};
+  }
+
+  svg {
+    width: 14px;
+    height: 14px;
+    flex-shrink: 0;
+  }
+
+  @media (max-width: 576px) {
+    padding: 4px;
+    span {
+      display: none;
+    }
+  }
+`;
+
+// Create a VisualizationButton component for visualization
+const VisualizationButton = styled.button`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  color: ${({ theme }) => theme.text.secondary};
+  padding: 4px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  gap: 4px;
+  transition: all 0.2s;
+
+  &:hover {
+    background: ${({ theme }) => theme.hover};
+    color: ${({ theme }) => theme.text.primary};
+  }
+
+  svg {
+    width: 14px;
+    height: 14px;
+    flex-shrink: 0;
+  }
+
+  @media (max-width: 576px) {
+    padding: 4px;
+    span {
+      display: none;
+    }
+  }
+`;
+
+// Create a SaveButton component for save functionality
+const SaveButton = styled.button`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  color: ${({ theme }) => theme.text.secondary};
+  padding: 4px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  gap: 4px;
+  transition: all 0.2s;
+
+  &:hover {
+    background: ${({ theme }) => theme.hover};
+    color: ${({ theme }) => theme.text.primary};
+  }
+
+  svg {
+    width: 14px;
+    height: 14px;
+    flex-shrink: 0;
+  }
+
+  @media (max-width: 576px) {
+    padding: 4px;
+    span {
+      display: none;
+    }
+  }
+`;
+
 // Add a styled component for the notification
 const QueryChangeNotification = styled.div`
   display: flex;
@@ -1897,7 +1999,7 @@ function App() {
                     </QueryChangeNotification>
                   )}
 
-                  <FullScreenButton
+                  <SaveButton
                     onClick={openSaveQueryDialog}
                     title="Save this query"
                     style={{ marginLeft: "auto", marginRight: "8px" }}
@@ -1925,7 +2027,7 @@ function App() {
                       />
                     </svg>
                     <span>Save</span>
-                  </FullScreenButton>
+                  </SaveButton>
 
                   <RunButton onClick={() => handleExecuteQuery(queryText)}>
                     <svg
@@ -2048,13 +2150,128 @@ function App() {
                       </EditorTab>
                     ))}
 
-                    {/* Add Clear All button at the tabs level */}
+                    {/* Add layout control buttons - now on the left side */}
                     <FullScreenButton
+                      onClick={toggleFullScreen}
+                      title={isFullScreen ? "Exit full screen" : "Full screen"}
+                      style={{
+                        height: "36px",
+                        display: "flex",
+                        alignItems: "center",
+                        marginLeft: "auto",
+                      }}
+                    >
+                      {isFullScreen ? (
+                        <svg
+                          width="14"
+                          height="14"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          xmlns="http://www.w3.org/2000/svg"
+                        >
+                          <path
+                            d="M8 3v4H4M4 8V4m16 0h-4v4m0-4h4v4M4 16h4v4m-4 0v-4m16 0v4h-4m4-4v4h-4v-4"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          />
+                        </svg>
+                      ) : (
+                        <svg
+                          width="14"
+                          height="14"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          xmlns="http://www.w3.org/2000/svg"
+                        >
+                          <path
+                            d="M8 3H5a2 2 0 00-2 2v3m18 0V5a2 2 0 00-2-2h-3m0 18h3a2 2 0 002-2v-3M3 16v3a2 2 0 002 2h3"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          />
+                        </svg>
+                      )}
+                      <span>
+                        {isFullScreen ? "Exit full screen" : "Full screen"}
+                      </span>
+                    </FullScreenButton>
+
+                    <LayoutToggle
+                      onClick={toggleOutputMode}
+                      title={
+                        layoutDirection === "vertical"
+                          ? "Switch to side-by-side view"
+                          : "Switch to vertical view"
+                      }
+                      style={{
+                        height: "36px",
+                        display: "flex",
+                        alignItems: "center",
+                      }}
+                    >
+                      {layoutDirection === "vertical" ? (
+                        <svg
+                          width="14"
+                          height="14"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          xmlns="http://www.w3.org/2000/svg"
+                        >
+                          <path
+                            d="M18 4H6C4.89543 4 4 4.89543 4 6V18C4 19.1046 4.89543 20 6 20H18C19.1046 20 20 19.1046 20 18V6C20 4.89543 19.1046 4 18 4Z"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          />
+                          <path
+                            d="M12 4V20"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          />
+                        </svg>
+                      ) : (
+                        <svg
+                          width="14"
+                          height="14"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          xmlns="http://www.w3.org/2000/svg"
+                        >
+                          <path
+                            d="M18 4H6C4.89543 4 4 4.89543 4 6V18C4 19.1046 4.89543 20 6 20H18C19.1046 20 20 19.1046 20 18V6C20 4.89543 19.1046 4 18 4Z"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          />
+                          <path
+                            d="M4 12H20"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          />
+                        </svg>
+                      )}
+                      <span>
+                        {layoutDirection === "vertical"
+                          ? "Side-by-side View"
+                          : "Vertical View"}
+                      </span>
+                    </LayoutToggle>
+
+                    {/* Add Clear All button at the tabs level */}
+                    <ClearButton
                       onClick={handleClearResults}
                       title="Clear all results"
                       style={{
                         color: "var(--theme-error, #f44336)",
-                        marginLeft: "auto",
                         height: "36px",
                         display: "flex",
                         alignItems: "center",
@@ -2076,7 +2293,7 @@ function App() {
                         />
                       </svg>
                       <span>Clear All</span>
-                    </FullScreenButton>
+                    </ClearButton>
                   </EditorTabsBar>
                 )}
 
@@ -2103,120 +2320,13 @@ function App() {
                       </ResultsTitle>
 
                       <ToolbarActions>
-                        {/* Full-screen toggle button */}
-                        <FullScreenButton
-                          onClick={toggleFullScreen}
-                          title={
-                            isFullScreen ? "Exit full screen" : "Full screen"
-                          }
-                        >
-                          {isFullScreen ? (
-                            <svg
-                              width="14"
-                              height="14"
-                              viewBox="0 0 24 24"
-                              fill="none"
-                              xmlns="http://www.w3.org/2000/svg"
-                            >
-                              <path
-                                d="M8 3v4H4M4 8V4m16 0h-4v4m0-4h4v4M4 16h4v4m-4 0v-4m16 0v4h-4m4-4v4h-4v-4"
-                                stroke="currentColor"
-                                strokeWidth="2"
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                              />
-                            </svg>
-                          ) : (
-                            <svg
-                              width="14"
-                              height="14"
-                              viewBox="0 0 24 24"
-                              fill="none"
-                              xmlns="http://www.w3.org/2000/svg"
-                            >
-                              <path
-                                d="M8 3H5a2 2 0 00-2 2v3m18 0V5a2 2 0 00-2-2h-3m0 18h3a2 2 0 002-2v-3M3 16v3a2 2 0 002 2h3"
-                                stroke="currentColor"
-                                strokeWidth="2"
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                              />
-                            </svg>
-                          )}
-                          <span>
-                            {isFullScreen ? "Exit Full Screen" : "Full Screen"}
-                          </span>
-                        </FullScreenButton>
-
-                        <LayoutToggle
-                          onClick={toggleOutputMode}
-                          title={
-                            layoutDirection === "vertical"
-                              ? "Switch to side-by-side view"
-                              : "Switch to vertical view"
-                          }
-                        >
-                          {layoutDirection === "vertical" ? (
-                            <svg
-                              width="14"
-                              height="14"
-                              viewBox="0 0 24 24"
-                              fill="none"
-                              xmlns="http://www.w3.org/2000/svg"
-                            >
-                              <path
-                                d="M18 4H6C4.89543 4 4 4.89543 4 6V18C4 19.1046 4.89543 20 6 20H18C19.1046 20 20 19.1046 20 18V6C20 4.89543 19.1046 4 18 4Z"
-                                stroke="currentColor"
-                                strokeWidth="2"
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                              />
-                              <path
-                                d="M12 4V20"
-                                stroke="currentColor"
-                                strokeWidth="2"
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                              />
-                            </svg>
-                          ) : (
-                            <svg
-                              width="14"
-                              height="14"
-                              viewBox="0 0 24 24"
-                              fill="none"
-                              xmlns="http://www.w3.org/2000/svg"
-                            >
-                              <path
-                                d="M18 4H6C4.89543 4 4 4.89543 4 6V18C4 19.1046 4.89543 20 6 20H18C19.1046 20 20 19.1046 20 18V6C20 4.89543 19.1046 4 18 4Z"
-                                stroke="currentColor"
-                                strokeWidth="2"
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                              />
-                              <path
-                                d="M4 12H20"
-                                stroke="currentColor"
-                                strokeWidth="2"
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                              />
-                            </svg>
-                          )}
-                          <span>
-                            {layoutDirection === "vertical"
-                              ? "Side-by-side view"
-                              : "Vertical view"}
-                          </span>
-                        </LayoutToggle>
-
-                        {/* Only show visualization button in results tabs, not in visualization tabs */}
+                        {/* Visualization button - Only show for non-visualization tabs */}
                         {tabTypes[activeOutputTabId] !== "visualization" && (
-                          <FullScreenButton
+                          <VisualizationButton
                             onClick={() =>
                               createVisualizationTab(activeOutputTabId)
                             }
-                            title="Create visualization tab"
+                            title="Create visualization"
                           >
                             <svg
                               width="14"
@@ -2234,7 +2344,7 @@ function App() {
                               />
                             </svg>
                             <span>Create Visualization</span>
-                          </FullScreenButton>
+                          </VisualizationButton>
                         )}
 
                         {/* Only show export options in results tabs, not in visualization tabs */}
