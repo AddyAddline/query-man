@@ -6,6 +6,29 @@
   <link rel="icon" type="image/svg+xml" href="/vite.svg" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Query Man - SQL Query Builder</title>
+
+  <!-- SEO Meta Tags -->
+  <meta name="description"
+    content="Query Man is a professional SQL query builder with visual database exploration, real-time results, and advanced features for database professionals and developers." />
+  <meta name="keywords" content="SQL, query builder, database, SQL editor, data visualization, database explorer" />
+  <meta name="author" content="Query Man" />
+
+  <!-- Open Graph / Social Media Meta Tags -->
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="Query Man - Professional SQL Query Builder" />
+  <meta property="og:description"
+    content="Build, execute and visualize SQL queries with an intuitive interface. Explore databases with ease and get real-time results." />
+  <meta property="og:image" content="/og-image.png" />
+
+  <!-- Twitter Card data -->
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Query Man - SQL Query Builder" />
+  <meta name="twitter:description"
+    content="Professional SQL query builder with visual database exploration and real-time results." />
+
+  <!-- Canonical URL -->
+  <link rel="canonical" href="https://queryman.vercel.app/" />
+
   <!-- Preload critical resources -->
   <link rel="preload" href="/src/main.jsx" as="script" />
   <link rel="preload" href="/src/components/SQLEditor.jsx" as="script" />
@@ -43,6 +66,24 @@
 
 <body>
   <div id="root"></div>
+
+  <!-- Structured Data for SEO -->
+  <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "SoftwareApplication",
+      "name": "Query Man",
+      "applicationCategory": "DeveloperApplication",
+      "operatingSystem": "Web",
+      "description": "A professional SQL query builder with database exploration and visualization capabilities.",
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "USD"
+      }
+    }
+  </script>
+
   <script type="module" src="/src/main.jsx"></script>
 </body>
 
