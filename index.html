@@ -1,13 +1,49 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Vite + React</title>
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.jsx"></script>
-  </body>
+
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Query Man - SQL Query Builder</title>
+  <!-- Preload critical resources -->
+  <link rel="preload" href="/src/main.jsx" as="script" />
+  <link rel="preload" href="/src/components/SQLEditor.jsx" as="script" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="preload"
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Source+Code+Pro:wght@400;500&display=swap"
+    as="style" onload="this.onload=null;this.rel='stylesheet'" />
+  <!-- Fallback for font loading -->
+  <noscript>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Source+Code+Pro:wght@400;500&display=swap"
+      rel="stylesheet" type="text/css" />
+  </noscript>
+  <!-- Inline critical CSS for LCP element -->
+  <style>
+    .editor-container {
+      display: block !important;
+      visibility: visible !important;
+      min-height: 200px;
+    }
+
+    /* Font display optimization */
+    @font-face {
+      font-family: 'Source Code Pro';
+      font-display: swap;
+    }
+
+    body {
+      margin: 0;
+      padding: 0;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="root"></div>
+  <script type="module" src="/src/main.jsx"></script>
+</body>
+
 </html>

@@ -8,10 +8,17 @@ import React, {
 } from "react";
 import styled, { keyframes } from "styled-components";
 
-// Lazy load the Editor component
-const MonacoEditor = lazy(() =>
-  import("@monaco-editor/react").then((module) => ({ default: module.Editor }))
-);
+// Lazy load the Editor component with priority
+const MonacoEditor = lazy(() => {
+  // Use high priority loading
+  const promise = import(
+    /* webpackChunkName: "monaco-editor", webpackPrefetch: true */ "@monaco-editor/react"
+  ).then((module) => ({ default: module.Editor }));
+
+  // Add priority hint
+  promise.priority = 1;
+  return promise;
+});
 
 // Add highlight animation for when query changes
 const highlightAnimation = keyframes`
@@ -33,9 +40,32 @@ const EditorContainer = styled.div`
   height: 100%;
   width: 100%;
   transition: background-color 0.2s;
+  position: relative;
 
   &.query-changed {
     animation: ${highlightAnimation} 1s ease-in-out;
+  }
+`;
+
+// Simple textarea for immediate display while Monaco loads
+const SimpleTextarea = styled.textarea`
+  width: 100%;
+  height: 100%;
+  padding: 12px;
+  background-color: ${({ theme }) =>
+    theme.isDarkMode ? "#1e1e1e" : "#f8f9fa"};
+  color: ${({ theme }) => (theme.isDarkMode ? "#d4d4d4" : "#333")};
+  border: none;
+  resize: none;
+  font-family: "Source Code Pro", "Menlo", "Monaco", "Courier New", monospace;
+  font-size: 14px;
+  line-height: 1.5;
+  tab-size: 2;
+  outline: none;
+  display: block;
+
+  &:focus {
+    box-shadow: inset 0 0 0 1px ${({ theme }) => theme.primary};
   }
 `;
 
@@ -81,6 +111,8 @@ const SQLEditor = memo(
     const prevInitialQueryRef = useRef(initialQuery);
     // Add state to track when query has changed for animation
     const [hasQueryChanged, setHasQueryChanged] = useState(false);
+    // Add state to track if Monaco editor is loaded
+    const [monacoLoaded, setMonacoLoaded] = useState(false);
 
     // Update local state when initialQuery prop changes
     // Use a more robust approach to avoid infinite loops
@@ -117,6 +149,14 @@ const SQLEditor = memo(
       }
     };
 
+    // Handle simple textarea changes
+    const handleTextareaChange = (e) => {
+      const value = e.target.value;
+      if (value !== query) {
+        setQuery(value);
+      }
+    };
+
     const executeQuery = () => {
       onExecuteQuery(query);
     };
@@ -131,7 +171,7 @@ const SQLEditor = memo(
 
     // Handle when editor is fully mounted
     const handleEditorDidMount = () => {
-      console.log("Editor mounted successfully");
+      setMonacoLoaded(true);
     };
 
     // Basic editor options for initial load
@@ -157,19 +197,41 @@ const SQLEditor = memo(
       <EditorContainer
         onKeyDown={handleKeyDown}
         style={style}
-        className={hasQueryChanged ? "query-changed" : ""}
+        className={`editor-container ${hasQueryChanged ? "query-changed" : ""}`}
       >
-        <Suspense fallback={<EditorPlaceholder />}>
-          <MonacoEditor
-            height="100%"
-            width="100%"
-            language="sql"
+        {/* Show textarea immediately while Monaco loads */}
+        {!monacoLoaded && (
+          <SimpleTextarea
             value={query}
-            onChange={handleEditorChange}
-            options={editorOptions}
-            theme="vs-dark"
-            onMount={handleEditorDidMount}
+            onChange={handleTextareaChange}
+            onKeyDown={handleKeyDown}
+            spellCheck="false"
+            className="sc-eNhQl"
+            placeholder="Enter SQL query here..."
+            data-loading="eager"
+            loading="eager"
           />
+        )}
+
+        <Suspense fallback={<EditorPlaceholder />}>
+          <div
+            style={{
+              display: monacoLoaded ? "block" : "none",
+              width: "100%",
+              height: "100%",
+            }}
+          >
+            <MonacoEditor
+              height="100%"
+              width="100%"
+              language="sql"
+              value={query}
+              onChange={handleEditorChange}
+              options={editorOptions}
+              theme="vs-dark"
+              onMount={handleEditorDidMount}
+            />
+          </div>
         </Suspense>
       </EditorContainer>
     );
