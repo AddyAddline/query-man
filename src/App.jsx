@@ -43,8 +43,7 @@ const AppContainer = styled.div`
   flex-direction: column;
   height: 100vh;
   width: 100%;
-  background-color: ${({ theme }) =>
-    theme.isDarkMode ? "#1e1e1e" : "#f8f9fa"};
+  background-color: ${({ theme }) => theme.background};
   overflow: hidden;
 `;
 
@@ -169,7 +168,8 @@ const EditorResultsContainer = styled.div`
 // Tabs for editor/results
 const NavTabs = styled.div`
   display: flex;
-  background: ${({ theme }) => (theme.isDarkMode ? "#252526" : "#e9e9e9")};
+  background: ${({ theme }) =>
+    theme.isDarkMode ? "#252526" : theme.surfaceAlt};
   border-bottom: 1px solid ${({ theme }) => theme.border};
   padding: 0;
   height: 36px;
@@ -180,9 +180,9 @@ const NavTab = styled.button`
   padding: 0 16px;
   height: 36px;
   background: ${({ $active, theme }) =>
-    $active ? (theme.isDarkMode ? "#1e1e1e" : "#fff") : "transparent"};
+    $active ? theme.surface : "transparent"};
   color: ${({ $active, theme }) =>
-    $active ? theme.text.primary : theme.text.secondary};
+    $active ? theme.primary : theme.text.secondary};
   border: none;
   border-right: 1px solid ${({ theme }) => theme.border};
   font-size: 13px;
@@ -199,7 +199,7 @@ const NavTab = styled.button`
 
   &:hover {
     background: ${({ $active, theme }) =>
-      !$active && (theme.isDarkMode ? "#2a2a2a" : "#f5f5f5")};
+      !$active && (theme.isDarkMode ? "#2a2a2a" : theme.surfaceAlt)};
   }
 `;
 
@@ -328,6 +328,7 @@ const RunButton = styled.button`
   margin-left: auto;
   transition: all 0.2s;
   flex-shrink: 0;
+  box-shadow: ${({ theme }) => theme.shadow.small};
 
   &:hover {
     background-color: ${({ theme }) => theme.primaryDark};
@@ -350,7 +351,7 @@ const EditorToolbar = styled.div`
   align-items: center;
   padding: 8px 12px;
   background-color: ${({ theme }) =>
-    theme.isDarkMode ? "#252526" : "#f8f8f8"};
+    theme.isDarkMode ? "#252526" : theme.surfaceAlt};
   border-bottom: 1px solid ${({ theme }) => theme.border};
   min-height: 48px;
   width: 100%;
@@ -369,7 +370,7 @@ const ResultsToolbar = styled.div`
   align-items: center;
   padding: 8px 12px;
   background-color: ${({ theme }) =>
-    theme.isDarkMode ? "#252526" : "#f8f8f8"};
+    theme.isDarkMode ? "#252526" : theme.surfaceAlt};
   border-bottom: 1px solid ${({ theme }) => theme.border};
   min-height: 40px;
   width: 100%;
@@ -566,7 +567,8 @@ const MobileHistoryHeader = styled.div`
 // Add these styled components after NavTab:
 const EditorTabsBar = styled.div`
   display: flex;
-  background: ${({ theme }) => (theme.isDarkMode ? "#252526" : "#1e1e1e")};
+  background: ${({ theme }) =>
+    theme.isDarkMode ? "#252526" : theme.surfaceAlt};
   border-bottom: 1px solid ${({ theme }) => theme.border};
   height: 36px;
   overflow-x: auto;
@@ -583,10 +585,14 @@ const EditorTab = styled.div`
   height: 36px;
   padding: 0 12px;
   background: ${({ $active, theme }) =>
-    $active ? (theme.isDarkMode ? "#1e1e1e" : "#252526") : "transparent"};
+    $active ? theme.surface : "transparent"};
   border-right: 1px solid ${({ theme }) => theme.border};
   color: ${({ $active, theme }) =>
-    $active ? theme.text.primary : theme.text.secondary};
+    $active
+      ? theme.isDarkMode
+        ? theme.text.primary
+        : theme.text.primary
+      : theme.text.secondary};
   font-size: 13px;
   cursor: pointer;
   user-select: none;
@@ -595,7 +601,7 @@ const EditorTab = styled.div`
 
   &:hover {
     background: ${({ $active, theme }) =>
-      !$active && (theme.isDarkMode ? "#2a2a2a" : "#2f2f2f")};
+      !$active && (theme.isDarkMode ? "#2a2a2a" : theme.surfaceAlt)};
   }
 `;
 

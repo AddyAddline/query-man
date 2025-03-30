@@ -14,6 +14,20 @@ const GlobalStyles = createGlobalStyle`
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     background-color: ${({ theme }) => theme.background};
+    ${({ theme }) =>
+      !theme.isDarkMode &&
+      `
+      background-image: linear-gradient(
+        ${theme.surfaceAlt}40 1px, 
+        transparent 1px
+      ),
+      linear-gradient(
+        90deg, 
+        ${theme.surfaceAlt}40 1px, 
+        transparent 1px
+      );
+      background-size: 20px 20px;
+    `}
     color: ${({ theme }) => theme.text.primary};
     transition: background-color 0.3s ease, color 0.3s ease;
     height: 100%;
@@ -74,8 +88,7 @@ const GlobalStyles = createGlobalStyle`
   /* Code editor styling */
   .monaco-editor {
     .margin, .monaco-editor-background {
-      background-color: ${({ theme }) =>
-        theme.isDarkMode ? "#1e1e1e" : "#f5f5f5"} !important;
+      background-color: ${({ theme }) => theme.surface} !important;
     }
   }
   

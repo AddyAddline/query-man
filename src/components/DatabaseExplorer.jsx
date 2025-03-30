@@ -123,8 +123,7 @@ const ExplorerContainer = styled.div`
   display: flex;
   flex-direction: column;
   height: 100%;
-  background-color: ${({ theme }) =>
-    theme.isDarkMode ? "#1e1e1e" : "#f5f5f5"};
+  background-color: ${({ theme }) => theme.surface};
   width: 100%;
   box-sizing: border-box;
 `;
@@ -153,7 +152,7 @@ const Title = styled.h3`
 `;
 
 const SearchInput = styled.input`
-  width: 100%;
+  width: 92%;
   padding: 8px 12px;
   border-radius: 6px;
   border: 1px solid ${({ theme }) => theme.border};

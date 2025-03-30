@@ -7,8 +7,7 @@ const HeaderContainer = styled.header`
   justify-content: space-between;
   align-items: center;
   padding: 12px 16px;
-  background-color: ${({ theme }) =>
-    theme.isDarkMode ? "#1e1e1e" : "#f8f8f8"};
+  background-color: ${({ theme }) => theme.surface};
   border-bottom: 1px solid ${({ theme }) => theme.border};
   box-shadow: ${({ theme }) => theme.shadow.small};
   height: 64px;
@@ -80,10 +79,12 @@ const MetricsDisplay = styled.div`
   gap: 12px;
   font-size: 14px;
   color: ${({ theme }) => theme.text.secondary};
-  background-color: ${({ theme }) => theme.surface};
+  background-color: ${({ theme }) =>
+    theme.isDarkMode ? theme.surface : theme.surfaceAlt};
   padding: 6px 12px;
   border-radius: 20px;
-  border: 1px solid ${({ theme }) => theme.border};
+  border: 1px solid ${({ theme }) => theme.borderLight};
+  box-shadow: ${({ theme }) => theme.shadow.small};
 
   @media (max-width: 576px) {
     font-size: 12px;

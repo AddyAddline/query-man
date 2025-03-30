@@ -7,6 +7,7 @@ import React, {
   lazy,
 } from "react";
 import styled, { keyframes } from "styled-components";
+import { useTheme } from "../context/ThemeContext";
 
 // Lazy load the Editor component with priority
 const MonacoEditor = lazy(() => {
@@ -34,8 +35,7 @@ const EditorContainer = styled.div`
   flex: 1;
   border: none;
   overflow: hidden;
-  background-color: ${({ theme }) =>
-    theme.isDarkMode ? "#1e1e1e" : "#ffffff"};
+  background-color: ${({ theme }) => theme.surface};
   min-height: 200px;
   height: 100%;
   width: 100%;
@@ -58,9 +58,8 @@ const SimpleTextarea = styled.textarea.attrs({
   width: 100%;
   height: 100%;
   padding: 12px;
-  background-color: ${({ theme }) =>
-    theme.isDarkMode ? "#1e1e1e" : "#f8f9fa"};
-  color: ${({ theme }) => (theme.isDarkMode ? "#d4d4d4" : "#333")};
+  background-color: ${({ theme }) => theme.surface};
+  color: ${({ theme }) => (theme.isDarkMode ? "#d4d4d4" : theme.text.primary)};
   border: none;
   resize: none;
   font-family: "Source Code Pro", "Menlo", "Monaco", "Courier New", monospace;
@@ -83,8 +82,7 @@ const SimpleTextarea = styled.textarea.attrs({
 const PlaceholderContainer = styled.div`
   width: 100%;
   height: 100%;
-  background-color: ${({ theme }) =>
-    theme.isDarkMode ? "#1e1e1e" : "#f5f5f5"};
+  background-color: ${({ theme }) => theme.surface};
   display: flex;
   flex-direction: column;
   padding: 12px;
@@ -93,7 +91,7 @@ const PlaceholderContainer = styled.div`
 const PlaceholderLine = styled.div`
   height: 16px;
   background-color: ${({ theme }) =>
-    theme.isDarkMode ? "#2a2a2a" : "#e0e0e0"};
+    theme.isDarkMode ? "#2a2a2a" : theme.borderLight};
   width: ${(props) => props.$width || "100%"};
   margin-bottom: 8px;
   border-radius: 3px;
@@ -123,6 +121,8 @@ const SQLEditor = memo(
     const [hasQueryChanged, setHasQueryChanged] = useState(false);
     // Add state to track if Monaco editor is loaded
     const [monacoLoaded, setMonacoLoaded] = useState(false);
+    // Get theme context
+    const { theme } = useTheme();
 
     // Update local state when initialQuery prop changes
     // Use a more robust approach to avoid infinite loops
@@ -247,6 +247,9 @@ const SQLEditor = memo(
       }
     };
 
+    // Get editor theme based on current app theme
+    const editorTheme = theme.isDarkMode ? "vs-dark" : "vs";
+
     // Basic editor options for initial load
     const editorOptions = {
       minimap: { enabled: false },
@@ -310,7 +313,7 @@ const SQLEditor = memo(
               value={query}
               onChange={handleEditorChange}
               options={editorOptions}
-              theme="vs-dark"
+              theme={editorTheme}
               onMount={handleEditorDidMount}
             />
           </div>

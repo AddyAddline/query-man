@@ -18,9 +18,9 @@ const ToggleButton = styled.button`
   border-radius: 30px;
   border: 1px solid
     ${({ theme, $isDarkMode }) =>
-      $isDarkMode ? theme.border : "rgba(0, 0, 0, 0.1)"};
+      $isDarkMode ? theme.border : theme.borderLight};
   background-color: ${({ theme, $isDarkMode }) =>
-    $isDarkMode ? theme.background : "#f0f4f8"};
+    $isDarkMode ? theme.background : theme.surfaceAlt};
   cursor: pointer;
   transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
   overflow: hidden;
@@ -52,10 +52,10 @@ const ToggleThumb = styled.div`
   width: 24px;
   height: 24px;
   border-radius: 50%;
-  background: ${({ $isDarkMode }) =>
+  background: ${({ $isDarkMode, theme }) =>
     $isDarkMode
       ? "linear-gradient(135deg, #192333, #111827)"
-      : "linear-gradient(135deg, #FFD700, #FFA500)"};
+      : `linear-gradient(135deg, ${theme.secondary}, ${theme.secondaryDark})`};
   transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
   display: flex;
   align-items: center;

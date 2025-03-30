@@ -6,8 +6,7 @@ const HistoryContainer = styled.div`
   flex-direction: column;
   overflow: hidden;
   height: 100%;
-  background-color: ${({ theme }) =>
-    theme.isDarkMode ? "#1e1e1e" : "#f5f5f5"};
+  background-color: ${({ theme }) => theme.surfaceAlt};
 `;
 
 const HistoryList = styled.div`

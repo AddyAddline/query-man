@@ -161,14 +161,14 @@ const CustomTooltipWrapper = styled.div`
 
 // Colors for charts - more harmonious palette
 const COLORS = [
-  "#3498db", // blue
-  "#2ecc71", // green
-  "#e74c3c", // red
-  "#f39c12", // orange
-  "#9b59b6", // purple
-  "#1abc9c", // teal
-  "#34495e", // dark blue
-  "#e67e22", // dark orange
+  "#1976d2", // blue - from our new theme
+  "#2e7d32", // green - from our new theme
+  "#d32f2f", // red - from our new theme
+  "#ed6c02", // orange - from our new theme
+  "#5e35b1", // purple - from our new theme
+  "#0288d1", // lighter blue - from our new theme
+  "#00695c", // dark teal
+  "#f57c00", // darker orange
 ];
 
 function ResultVisualization({ data, queryId }) {
