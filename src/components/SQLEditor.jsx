@@ -1,6 +1,17 @@
-import React, { useState, useEffect, useRef, memo } from "react";
-import { Editor } from "@monaco-editor/react";
+import React, {
+  useState,
+  useEffect,
+  useRef,
+  memo,
+  Suspense,
+  lazy,
+} from "react";
 import styled, { keyframes } from "styled-components";
+
+// Lazy load the Editor component
+const MonacoEditor = lazy(() =>
+  import("@monaco-editor/react").then((module) => ({ default: module.Editor }))
+);
 
 // Add highlight animation for when query changes
 const highlightAnimation = keyframes`
@@ -27,6 +38,38 @@ const EditorContainer = styled.div`
     animation: ${highlightAnimation} 1s ease-in-out;
   }
 `;
+
+// Lightweight placeholder for the editor while it's loading
+const PlaceholderContainer = styled.div`
+  width: 100%;
+  height: 100%;
+  background-color: ${({ theme }) =>
+    theme.isDarkMode ? "#1e1e1e" : "#f5f5f5"};
+  display: flex;
+  flex-direction: column;
+  padding: 12px;
+`;
+
+const PlaceholderLine = styled.div`
+  height: 16px;
+  background-color: ${({ theme }) =>
+    theme.isDarkMode ? "#2a2a2a" : "#e0e0e0"};
+  width: ${(props) => props.$width || "100%"};
+  margin-bottom: 8px;
+  border-radius: 3px;
+`;
+
+// Simple placeholder component for the editor
+const EditorPlaceholder = memo(() => (
+  <PlaceholderContainer>
+    <PlaceholderLine $width="80%" />
+    <PlaceholderLine $width="65%" />
+    <PlaceholderLine $width="75%" />
+    <PlaceholderLine $width="50%" />
+    <PlaceholderLine $width="40%" />
+    <PlaceholderLine $width="70%" />
+  </PlaceholderContainer>
+));
 
 // Convert to memo to prevent unnecessary renders
 const SQLEditor = memo(
@@ -86,37 +129,48 @@ const SQLEditor = memo(
       }
     };
 
+    // Handle when editor is fully mounted
+    const handleEditorDidMount = () => {
+      console.log("Editor mounted successfully");
+    };
+
+    // Basic editor options for initial load
+    const editorOptions = {
+      minimap: { enabled: false },
+      scrollBeyondLastLine: false,
+      fontSize: 14,
+      fontFamily:
+        "'Source Code Pro', 'Menlo', 'Monaco', 'Courier New', monospace",
+      wordWrap: "on",
+      lineNumbers: "on",
+      folding: true,
+      automaticLayout: true,
+      padding: { top: 8 },
+      lineHeight: 1.5,
+      cursorBlinking: "smooth",
+      cursorSmoothCaretAnimation: "on",
+      bracketPairColorization: { enabled: true },
+      renderLineHighlight: "all",
+    };
+
     return (
       <EditorContainer
         onKeyDown={handleKeyDown}
         style={style}
         className={hasQueryChanged ? "query-changed" : ""}
       >
-        <Editor
-          height="100%"
-          width="100%"
-          language="sql"
-          value={query}
-          onChange={handleEditorChange}
-          options={{
-            minimap: { enabled: false },
-            scrollBeyondLastLine: false,
-            fontSize: 14,
-            fontFamily:
-              "'Source Code Pro', 'Menlo', 'Monaco', 'Courier New', monospace",
-            wordWrap: "on",
-            lineNumbers: "on",
-            folding: true,
-            automaticLayout: true,
-            padding: { top: 8 },
-            lineHeight: 1.5,
-            cursorBlinking: "smooth",
-            cursorSmoothCaretAnimation: "on",
-            bracketPairColorization: { enabled: true },
-            renderLineHighlight: "all",
-          }}
-          theme="vs-dark"
-        />
+        <Suspense fallback={<EditorPlaceholder />}>
+          <MonacoEditor
+            height="100%"
+            width="100%"
+            language="sql"
+            value={query}
+            onChange={handleEditorChange}
+            options={editorOptions}
+            theme="vs-dark"
+            onMount={handleEditorDidMount}
+          />
+        </Suspense>
       </EditorContainer>
     );
   },

@@ -3,14 +3,14 @@ import styled from "styled-components";
 import { ThemeProvider } from "./context/ThemeContext";
 import GlobalStyles from "./styles/GlobalStyles";
 import Header from "./components/Header";
-import SQLEditor from "./components/SQLEditor";
 import QuerySelector from "./components/QuerySelector";
 import { predefinedQueries } from "./data/mockData";
 import useSQLQuery from "./hooks/useSQLQuery";
-import DatabaseExplorer from "./components/DatabaseExplorer";
 import { nanoid } from "nanoid";
 
-// Lazy load components that aren't needed immediately
+// Lazy load all heavy components
+const SQLEditor = lazy(() => import("./components/SQLEditor"));
+const DatabaseExplorer = lazy(() => import("./components/DatabaseExplorer"));
 const ResultTable = lazy(() => import("./components/ResultTable"));
 const ResultVisualization = lazy(() =>
   import("./components/ResultVisualization")
@@ -18,6 +18,25 @@ const ResultVisualization = lazy(() =>
 const QueryHistory = lazy(() => import("./components/QueryHistory"));
 const DownloadOptions = lazy(() => import("./components/DownloadOptions"));
 const KeyboardShortcuts = lazy(() => import("./components/KeyboardShortcuts"));
+
+// Create lightweight fallback components
+const LoadingFallback = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  width: 100%;
+  background-color: ${({ theme }) => theme.background};
+  color: ${({ theme }) => theme.text.secondary};
+  font-size: 14px;
+  opacity: 0.7;
+`;
+
+const EditorFallback = styled(LoadingFallback)`
+  min-height: 200px;
+  border: 1px solid ${({ theme }) => theme.border};
+  border-radius: 4px;
+`;
 
 const AppContainer = styled.div`
   display: flex;
@@ -1633,7 +1652,13 @@ function App() {
               </SidebarTabs>
 
               <SidebarContent $active={activeSidebarTab === "explorer"}>
-                <DatabaseExplorer onTableClick={handleTableClick} />
+                <Suspense
+                  fallback={
+                    <LoadingFallback>Loading explorer...</LoadingFallback>
+                  }
+                >
+                  <DatabaseExplorer onTableClick={handleTableClick} />
+                </Suspense>
               </SidebarContent>
 
               <SidebarContent $active={activeSidebarTab === "history"}>
@@ -1911,11 +1936,15 @@ function App() {
                 </EditorToolbar>
 
                 {/* SQL Editor */}
-                <SQLEditor
-                  onExecuteQuery={handleExecuteQuery}
-                  initialQuery={queryText}
-                  style={{ flex: 1 }}
-                />
+                <Suspense
+                  fallback={<EditorFallback>Loading editor...</EditorFallback>}
+                >
+                  <SQLEditor
+                    onExecuteQuery={handleExecuteQuery}
+                    initialQuery={queryText}
+                    style={{ flex: 1 }}
+                  />
+                </Suspense>
               </EditorSection>
 
               {/* Resizable handle - Position matches layout direction */}

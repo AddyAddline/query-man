@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import React, { useMemo, memo, useState, useCallback, useEffect } from "react";
 import {
   useReactTable,
   getCoreRowModel,
@@ -254,7 +254,7 @@ const EmptyState = styled.div`
   }
 `;
 
-// Formatter functions for different data types
+// Formatter functions for different data types - moved outside component to prevent recreation
 const formatters = {
   formatCurrency: (value) => {
     if (typeof value === "number") {
@@ -325,18 +325,215 @@ const VirtualCell = styled.div`
 // Update the virtual row height
 const ROW_HEIGHT = 48; // Slightly taller for better readability
 
+// Memoized header component to prevent unnecessary renders
+const MemoizedTableHeader = memo(({ title, fromCache, rowCount }) => (
+  <TableHeader>
+    <Title>
+      <svg
+        width="16"
+        height="16"
+        viewBox="0 0 24 24"
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        <path
+          d="M3 10h18M3 14h18M3 18h18M3 6h18"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </svg>
+      {title}
+      <CacheIndicator fromCache={fromCache} />
+    </Title>
+    <TableStats>
+      <svg
+        width="14"
+        height="14"
+        viewBox="0 0 24 24"
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        <path
+          d="M2 20h20M4 12h4v8H4v-8zM10 8h4v12h-4V8zM16 4h4v16h-4V4z"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </svg>
+      {rowCount} rows
+    </TableStats>
+  </TableHeader>
+));
+
+// Memoized empty state component
+const MemoizedEmptyState = memo(({ title }) => (
+  <TableContainer>
+    <TableHeader>
+      <Title>
+        <svg
+          width="16"
+          height="16"
+          viewBox="0 0 24 24"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path
+            d="M3 10h18M3 14h18M3 18h18M3 6h18"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </svg>
+        {title}
+      </Title>
+    </TableHeader>
+    <EmptyState>
+      <svg
+        width="48"
+        height="48"
+        viewBox="0 0 24 24"
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        <path
+          d="M3 10h18M3 14h18M7 18h10M7 6h10"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </svg>
+      <div>No results to display</div>
+    </EmptyState>
+  </TableContainer>
+));
+
+// Memoized table head component
+const MemoizedTableHead = memo(({ headerGroup, totalWidth }) => (
+  <StyledTable style={{ tableLayout: "fixed", width: `${totalWidth}px` }}>
+    <TableHead>
+      {headerGroup.map((headerGroup) => (
+        <tr key={headerGroup.id}>
+          {headerGroup.headers.map((header) => (
+            <th
+              key={header.id}
+              onClick={header.column.getToggleSortingHandler()}
+              className={
+                header.column.getIsSorted() === "asc"
+                  ? "sort-asc"
+                  : header.column.getIsSorted() === "desc"
+                  ? "sort-desc"
+                  : ""
+              }
+              style={{
+                width: header.getSize(),
+                minWidth: header.getSize(),
+              }}
+            >
+              {flexRender(header.column.columnDef.header, header.getContext())}
+            </th>
+          ))}
+        </tr>
+      ))}
+    </TableHead>
+  </StyledTable>
+));
+
+// Memoized row component
+const MemoizedRow = memo(({ index, style, data }) => {
+  const { rows, visibleColumns } = data;
+  const row = rows[index];
+
+  // Show a simple loading placeholder when scrolling quickly
+  if (!row) {
+    return (
+      <VirtualRow style={style}>
+        {visibleColumns.map((column, idx) => (
+          <VirtualCell
+            key={idx}
+            $width={`${column.getSize()}px`}
+            className="loading"
+            style={{
+              width: column.getSize(),
+              minWidth: column.getSize(),
+            }}
+          >
+            Loading...
+          </VirtualCell>
+        ))}
+      </VirtualRow>
+    );
+  }
+
+  return (
+    <VirtualRow style={style}>
+      {row.getVisibleCells().map((cell) => (
+        <VirtualCell
+          key={cell.id}
+          $width={`${cell.column.getSize()}px`}
+          style={{
+            width: cell.column.getSize(),
+            minWidth: cell.column.getSize(),
+          }}
+        >
+          {flexRender(cell.column.columnDef.cell, cell.getContext())}
+        </VirtualCell>
+      ))}
+    </VirtualRow>
+  );
+});
+
 function ResultTable({ data, title = "Query Results", fromCache = false }) {
   const columnHelper = createColumnHelper();
+  const [isClient, setIsClient] = useState(false);
 
+  // Initialize rowData and itemRenderer with empty defaults to avoid conditional hooks
+  const [rowData, setRowData] = useState({
+    rows: [],
+    columns: [],
+    visibleColumns: [],
+  });
+
+  // Effect to detect client-side rendering
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+
+  // Create columns only when we have data
   const columns = useMemo(() => {
     if (!data || data.length === 0) {
       return [];
     }
 
-    // Create columns from the first row's keys
+    // To prevent slower initial renders, create basic columns first
     return Object.keys(data[0]).map((key) => {
+      const initialSize = key.length * 10 + 50; // Simple initial sizing
+      return columnHelper.accessor(key, {
+        header: key.charAt(0).toUpperCase() + key.slice(1).replace(/_/g, " "),
+        cell: (info) => info.getValue(),
+        size: Math.min(Math.max(initialSize, 100), 200), // Limit size range
+      });
+    });
+  }, [data, columnHelper]);
+
+  // Refined columns with formatting - only processed after initial render
+  const enhancedColumns = useMemo(() => {
+    if (!isClient || !data || data.length === 0) {
+      return columns;
+    }
+
+    return columns.map((column) => {
+      const key = column.id;
+
+      // Sample just a few rows for type detection to speed up processing
+      const sampleRows = data.slice(0, Math.min(data.length, 20));
+
       // Determine if it's a numeric column
-      const isNumeric = data.some((row) => typeof row[key] === "number");
+      const isNumeric = sampleRows.some((row) => typeof row[key] === "number");
 
       // Determine if it's a date column
       const isDate =
@@ -351,8 +548,8 @@ function ResultTable({ data, title = "Query Results", fromCache = false }) {
           key.toLowerCase().includes("revenue") ||
           key.toLowerCase().includes("total"));
 
-      return columnHelper.accessor(key, {
-        header: key.charAt(0).toUpperCase() + key.slice(1).replace(/_/g, " "), // Format header
+      return {
+        ...column,
         cell: (info) => {
           const value = info.getValue();
 
@@ -365,63 +562,39 @@ function ResultTable({ data, title = "Query Results", fromCache = false }) {
 
           return value;
         },
-        // Estimate column width based on content type
-        size: isCurrency || isDate ? 120 : 150,
-      });
+        size: isCurrency || isDate ? 120 : column.size,
+      };
     });
-  }, [data, columnHelper]);
+  }, [isClient, data, columns]);
 
+  // Only perform expensive operations after initial render
   const table = useReactTable({
     data: data || [],
-    columns,
+    columns: isClient ? enhancedColumns : columns,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
   });
 
+  // ItemRenderer that receives all props for the List component - defined consistently regardless of data
+  const itemRenderer = useCallback(
+    (props) => <MemoizedRow {...props} data={rowData} />,
+    [rowData]
+  );
+
+  // Update rowData after table is defined
+  useEffect(() => {
+    if (data && data.length > 0 && table) {
+      setRowData({
+        rows: table.getRowModel().rows,
+        columns: table.getAllColumns(),
+        visibleColumns: table.getVisibleFlatColumns(),
+      });
+    }
+  }, [data, table]);
+
   // If no data, show a message
   if (!data || data.length === 0) {
-    return (
-      <TableContainer>
-        <TableHeader>
-          <Title>
-            <svg
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="M3 10h18M3 14h18M3 18h18M3 6h18"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-            {title}
-          </Title>
-        </TableHeader>
-        <EmptyState>
-          <svg
-            width="48"
-            height="48"
-            viewBox="0 0 24 24"
-            fill="none"
-            xmlns="http://www.w3.org/2000/svg"
-          >
-            <path
-              d="M3 10h18M3 14h18M7 18h10M7 6h10"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
-          <div>No results to display</div>
-        </EmptyState>
-      </TableContainer>
-    );
+    return <MemoizedEmptyState title={title} />;
   }
 
   // Calculate total width for the virtualized list
@@ -429,124 +602,20 @@ function ResultTable({ data, title = "Query Results", fromCache = false }) {
     .getAllColumns()
     .reduce((acc, column) => acc + (column.getSize() || 150), 0);
 
-  // Update the Row renderer to show a smoother transition when scrolling
-  const Row = ({ index, style }) => {
-    const row = table.getRowModel().rows[index];
-
-    // Show a simple loading placeholder when scrolling quickly
-    if (!row) {
-      // Note: The animation is now handled by styled components
-      return (
-        <VirtualRow style={style}>
-          {columns.map((column, idx) => (
-            <VirtualCell
-              key={idx}
-              $width={`${column.getSize()}px`}
-              className="loading"
-              style={{
-                width: column.getSize(),
-                minWidth: column.getSize(),
-              }}
-            >
-              Loading...
-            </VirtualCell>
-          ))}
-        </VirtualRow>
-      );
-    }
-
-    return (
-      <VirtualRow style={style}>
-        {row.getVisibleCells().map((cell) => (
-          <VirtualCell
-            key={cell.id}
-            $width={`${cell.column.getSize()}px`}
-            style={{
-              width: cell.column.getSize(),
-              minWidth: cell.column.getSize(),
-            }}
-          >
-            {flexRender(cell.column.columnDef.cell, cell.getContext())}
-          </VirtualCell>
-        ))}
-      </VirtualRow>
-    );
-  };
-
   return (
     <TableContainer>
-      <TableHeader>
-        <Title>
-          <svg
-            width="16"
-            height="16"
-            viewBox="0 0 24 24"
-            fill="none"
-            xmlns="http://www.w3.org/2000/svg"
-          >
-            <path
-              d="M3 10h18M3 14h18M3 18h18M3 6h18"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
-          {title}
-          <CacheIndicator fromCache={fromCache} />
-        </Title>
-        <TableStats>
-          <svg
-            width="14"
-            height="14"
-            viewBox="0 0 24 24"
-            fill="none"
-            xmlns="http://www.w3.org/2000/svg"
-          >
-            <path
-              d="M2 20h20M4 12h4v8H4v-8zM10 8h4v12h-4V8zM16 4h4v16h-4V4z"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
-          {data.length} rows
-        </TableStats>
-      </TableHeader>
+      <MemoizedTableHeader
+        title={title}
+        fromCache={fromCache}
+        rowCount={data.length}
+      />
 
       <TableWrapper className="table-wrapper">
         {/* Table header */}
-        <StyledTable style={{ tableLayout: "fixed", width: `${totalWidth}px` }}>
-          <TableHead>
-            {table.getHeaderGroups().map((headerGroup) => (
-              <tr key={headerGroup.id}>
-                {headerGroup.headers.map((header) => (
-                  <th
-                    key={header.id}
-                    onClick={header.column.getToggleSortingHandler()}
-                    className={
-                      header.column.getIsSorted() === "asc"
-                        ? "sort-asc"
-                        : header.column.getIsSorted() === "desc"
-                        ? "sort-desc"
-                        : ""
-                    }
-                    style={{
-                      width: header.getSize(),
-                      minWidth: header.getSize(),
-                    }}
-                  >
-                    {flexRender(
-                      header.column.columnDef.header,
-                      header.getContext()
-                    )}
-                  </th>
-                ))}
-              </tr>
-            ))}
-          </TableHead>
-        </StyledTable>
+        <MemoizedTableHead
+          headerGroup={table.getHeaderGroups()}
+          totalWidth={totalWidth}
+        />
 
         {/* Virtualized list for rows */}
         <div style={{ height: "calc(100% - 37px)" }}>
@@ -555,12 +624,12 @@ function ResultTable({ data, title = "Query Results", fromCache = false }) {
               <List
                 height={height}
                 itemCount={table.getRowModel().rows.length}
-                itemSize={ROW_HEIGHT} // Updated row height
+                itemSize={ROW_HEIGHT}
                 width={width}
-                overscanCount={10} // Increased for smoother scrolling
-                itemData={table.getRowModel().rows}
+                overscanCount={5} // Reduced initially for faster first render
+                itemData={rowData}
               >
-                {Row}
+                {itemRenderer}
               </List>
             )}
           </AutoSizer>
@@ -570,4 +639,4 @@ function ResultTable({ data, title = "Query Results", fromCache = false }) {
   );
 }
 
-export default ResultTable;
+export default memo(ResultTable);

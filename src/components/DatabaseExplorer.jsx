@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, memo } from "react";
 import styled from "styled-components";
 
 // Mock schema data - in a real app, this would come from an API
@@ -448,7 +448,289 @@ const ActionButton = styled.button`
   }
 `;
 
-function DatabaseExplorer({ onTableClick }) {
+// Memoize the components that are repeated in lists
+const MemoizedColumnItem = memo(({ column }) => (
+  <ColumnItem key={column.name}>
+    <ColumnIcon
+      $isPrimary={column.isPrimary}
+      $isForeignKey={column.isForeignKey}
+    >
+      {column.isPrimary ? (
+        <svg
+          width="14"
+          height="14"
+          viewBox="0 0 24 24"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path
+            d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L9 19l-2 2-2-2 2-2 4.257-4.257A6 6 0 1121 9z"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+          <circle cx="15" cy="9" r="2" fill="currentColor" />
+        </svg>
+      ) : column.isForeignKey ? (
+        <svg
+          width="14"
+          height="14"
+          viewBox="0 0 24 24"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path
+            d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+          <path
+            d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </svg>
+      ) : (
+        <svg
+          width="14"
+          height="14"
+          viewBox="0 0 24 24"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <circle
+            cx="12"
+            cy="12"
+            r="3"
+            stroke="currentColor"
+            strokeWidth="1.5"
+          />
+        </svg>
+      )}
+    </ColumnIcon>
+    <ColumnName>{column.name}</ColumnName>
+    <ColumnType>{column.type}</ColumnType>
+    {column.isNullable === false && (
+      <ColumnConstraint>NOT NULL</ColumnConstraint>
+    )}
+  </ColumnItem>
+));
+
+const MemoizedTableItem = memo(
+  ({
+    table,
+    expanded,
+    toggleExpand,
+    handleTableContextMenu,
+    generateSelectSQL,
+  }) => (
+    <TableItem key={table.name}>
+      <TableHeader
+        onClick={() => toggleExpand("table", table.name)}
+        onContextMenu={(e) => handleTableContextMenu(e, table.name)}
+        onDoubleClick={() => generateSelectSQL(table.name)}
+        $expanded={expanded}
+      >
+        <ChevronIcon $expanded={expanded}>
+          <svg
+            width="12"
+            height="12"
+            viewBox="0 0 24 24"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path
+              d="M19 9l-7 7-7-7"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+        </ChevronIcon>
+        <TableIcon $expanded={expanded}>
+          <svg
+            width="14"
+            height="14"
+            viewBox="0 0 24 24"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path
+              d="M3 3h18v18H3V3zm0 6h18M3 15h18M9 3v18"
+              stroke="currentColor"
+              strokeWidth="1.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+        </TableIcon>
+        {table.name}
+      </TableHeader>
+
+      {expanded && (
+        <ColumnsList>
+          {/* Only render 20 columns at a time if there are many columns */}
+          {table.columns.length > 30
+            ? table.columns
+                .slice(0, 20)
+                .map((column) => (
+                  <MemoizedColumnItem key={column.name} column={column} />
+                ))
+            : table.columns.map((column) => (
+                <MemoizedColumnItem key={column.name} column={column} />
+              ))}
+          {table.columns.length > 30 && (
+            <ColumnItem style={{ justifyContent: "center", padding: "5px 0" }}>
+              <button
+                style={{
+                  background: "none",
+                  border: "none",
+                  color: "inherit",
+                  cursor: "pointer",
+                  fontSize: "12px",
+                  opacity: 0.7,
+                }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  alert(`${table.columns.length - 20} more columns not shown.`);
+                }}
+              >
+                {table.columns.length - 20} more columns...
+              </button>
+            </ColumnItem>
+          )}
+        </ColumnsList>
+      )}
+    </TableItem>
+  )
+);
+
+const MemoizedDatabaseItem = memo(
+  ({
+    database,
+    expanded,
+    toggleExpand,
+    expandedItems,
+    handleTableContextMenu,
+    generateSelectSQL,
+  }) => (
+    <DatabaseItem key={database.name}>
+      <DatabaseHeader
+        onClick={() => toggleExpand("db", database.name)}
+        $expanded={expanded}
+      >
+        <ChevronIcon $expanded={expanded}>
+          <svg
+            width="14"
+            height="14"
+            viewBox="0 0 24 24"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path
+              d="M19 9l-7 7-7-7"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+        </ChevronIcon>
+        <DatabaseIcon $expanded={expanded}>
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path
+              d="M12 8c4.42 0 8-1.34 8-3s-3.58-3-8-3-8 1.34-8 3 3.58 3 8 3z"
+              stroke="currentColor"
+              strokeWidth="1.5"
+            />
+            <path
+              d="M4 5v6c0 1.66 3.58 3 8 3s8-1.34 8-3V5"
+              stroke="currentColor"
+              strokeWidth="1.5"
+            />
+            <path
+              d="M4 11v6c0 1.66 3.58 3 8 3s8-1.34 8-3v-6"
+              stroke="currentColor"
+              strokeWidth="1.5"
+            />
+          </svg>
+        </DatabaseIcon>
+        {database.name}
+      </DatabaseHeader>
+
+      {expanded && (
+        <TablesList>
+          {/* Only render first 15 tables initially if there are many tables */}
+          {database.tables.length > 20
+            ? database.tables
+                .slice(0, 15)
+                .map((table) => (
+                  <MemoizedTableItem
+                    key={table.name}
+                    table={table}
+                    expanded={expandedItems[`table_${table.name}`]}
+                    toggleExpand={toggleExpand}
+                    handleTableContextMenu={handleTableContextMenu}
+                    generateSelectSQL={generateSelectSQL}
+                  />
+                ))
+            : database.tables.map((table) => (
+                <MemoizedTableItem
+                  key={table.name}
+                  table={table}
+                  expanded={expandedItems[`table_${table.name}`]}
+                  toggleExpand={toggleExpand}
+                  handleTableContextMenu={handleTableContextMenu}
+                  generateSelectSQL={generateSelectSQL}
+                />
+              ))}
+          {database.tables.length > 20 && (
+            <TableItem
+              style={{
+                justifyContent: "center",
+                padding: "8px 0",
+                opacity: 0.7,
+              }}
+            >
+              <button
+                style={{
+                  background: "none",
+                  border: "none",
+                  color: "inherit",
+                  cursor: "pointer",
+                  fontSize: "12px",
+                }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  alert(
+                    `${database.tables.length - 15} more tables not shown.`
+                  );
+                }}
+              >
+                {database.tables.length - 15} more tables...
+              </button>
+            </TableItem>
+          )}
+        </TablesList>
+      )}
+    </DatabaseItem>
+  )
+);
+
+// Optimize the main function component
+const DatabaseExplorer = memo(function DatabaseExplorer({ onTableClick }) {
   const [expandedItems, setExpandedItems] = useState({});
   const [searchTerm, setSearchTerm] = useState("");
   const [contextMenuItems, setContextMenuItems] = useState(null);
@@ -522,14 +804,15 @@ function DatabaseExplorer({ onTableClick }) {
   };
 
   // Effect to close context menu on outside click
-  React.useEffect(() => {
+  useEffect(() => {
     if (contextMenuItems) {
       document.addEventListener("click", handleClickOutside);
       return () => document.removeEventListener("click", handleClickOutside);
     }
   }, [contextMenuItems]);
 
-  const filteredData = filterSchemaItems();
+  // Memoize the filtered data to prevent recalculation on each render
+  const filteredData = React.useMemo(() => filterSchemaItems(), [searchTerm]);
 
   return (
     <ExplorerContainer onClick={() => setContextMenuItems(null)}>
@@ -561,196 +844,40 @@ function DatabaseExplorer({ onTableClick }) {
       />
 
       <TreeContainer>
-        {filteredData.map((database) => (
-          <DatabaseItem key={database.name}>
-            <DatabaseHeader
-              onClick={() => toggleExpand("db", database.name)}
-              $expanded={expandedItems[`db_${database.name}`]}
-            >
-              <ChevronIcon $expanded={expandedItems[`db_${database.name}`]}>
-                <svg
-                  width="14"
-                  height="14"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <path
-                    d="M19 9l-7 7-7-7"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
-              </ChevronIcon>
-              <DatabaseIcon $expanded={expandedItems[`db_${database.name}`]}>
-                <svg
-                  width="16"
-                  height="16"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <path
-                    d="M12 8c4.42 0 8-1.34 8-3s-3.58-3-8-3-8 1.34-8 3 3.58 3 8 3z"
-                    stroke="currentColor"
-                    strokeWidth="1.5"
-                  />
-                  <path
-                    d="M4 5v6c0 1.66 3.58 3 8 3s8-1.34 8-3V5"
-                    stroke="currentColor"
-                    strokeWidth="1.5"
-                  />
-                  <path
-                    d="M4 11v6c0 1.66 3.58 3 8 3s8-1.34 8-3v-6"
-                    stroke="currentColor"
-                    strokeWidth="1.5"
-                  />
-                </svg>
-              </DatabaseIcon>
-              {database.name}
-            </DatabaseHeader>
-
-            {expandedItems[`db_${database.name}`] && (
-              <TablesList>
-                {database.tables.map((table) => (
-                  <TableItem key={table.name}>
-                    <TableHeader
-                      onClick={() => toggleExpand("table", table.name)}
-                      onContextMenu={(e) =>
-                        handleTableContextMenu(e, table.name)
-                      }
-                      onDoubleClick={() => generateSelectSQL(table.name)}
-                      $expanded={expandedItems[`table_${table.name}`]}
-                    >
-                      <ChevronIcon
-                        $expanded={expandedItems[`table_${table.name}`]}
-                      >
-                        <svg
-                          width="12"
-                          height="12"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          xmlns="http://www.w3.org/2000/svg"
-                        >
-                          <path
-                            d="M19 9l-7 7-7-7"
-                            stroke="currentColor"
-                            strokeWidth="2"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                          />
-                        </svg>
-                      </ChevronIcon>
-                      <TableIcon
-                        $expanded={expandedItems[`table_${table.name}`]}
-                      >
-                        <svg
-                          width="14"
-                          height="14"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          xmlns="http://www.w3.org/2000/svg"
-                        >
-                          <path
-                            d="M3 3h18v18H3V3zm0 6h18M3 15h18M9 3v18"
-                            stroke="currentColor"
-                            strokeWidth="1.5"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                          />
-                        </svg>
-                      </TableIcon>
-                      {table.name}
-                    </TableHeader>
-
-                    {expandedItems[`table_${table.name}`] && (
-                      <ColumnsList>
-                        {table.columns.map((column) => (
-                          <ColumnItem key={column.name}>
-                            <ColumnIcon
-                              $isPrimary={column.isPrimary}
-                              $isForeignKey={column.isForeignKey}
-                            >
-                              {column.isPrimary ? (
-                                <svg
-                                  width="14"
-                                  height="14"
-                                  viewBox="0 0 24 24"
-                                  fill="none"
-                                  xmlns="http://www.w3.org/2000/svg"
-                                >
-                                  <path
-                                    d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L9 19l-2 2-2-2 2-2 4.257-4.257A6 6 0 1121 9z"
-                                    stroke="currentColor"
-                                    strokeWidth="1.5"
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                  />
-                                  <circle
-                                    cx="15"
-                                    cy="9"
-                                    r="2"
-                                    fill="currentColor"
-                                  />
-                                </svg>
-                              ) : column.isForeignKey ? (
-                                <svg
-                                  width="14"
-                                  height="14"
-                                  viewBox="0 0 24 24"
-                                  fill="none"
-                                  xmlns="http://www.w3.org/2000/svg"
-                                >
-                                  <path
-                                    d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"
-                                    stroke="currentColor"
-                                    strokeWidth="1.5"
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                  />
-                                  <path
-                                    d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"
-                                    stroke="currentColor"
-                                    strokeWidth="1.5"
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                  />
-                                </svg>
-                              ) : (
-                                <svg
-                                  width="14"
-                                  height="14"
-                                  viewBox="0 0 24 24"
-                                  fill="none"
-                                  xmlns="http://www.w3.org/2000/svg"
-                                >
-                                  <circle
-                                    cx="12"
-                                    cy="12"
-                                    r="3"
-                                    stroke="currentColor"
-                                    strokeWidth="1.5"
-                                  />
-                                </svg>
-                              )}
-                            </ColumnIcon>
-                            <ColumnName>{column.name}</ColumnName>
-                            <ColumnType>{column.type}</ColumnType>
-                            {column.isNullable === false && (
-                              <ColumnConstraint>NOT NULL</ColumnConstraint>
-                            )}
-                          </ColumnItem>
-                        ))}
-                      </ColumnsList>
-                    )}
-                  </TableItem>
-                ))}
-              </TablesList>
-            )}
-          </DatabaseItem>
+        {/* Only render a limited number of databases initially for better performance */}
+        {filteredData.slice(0, 10).map((database) => (
+          <MemoizedDatabaseItem
+            key={database.name}
+            database={database}
+            expanded={expandedItems[`db_${database.name}`]}
+            toggleExpand={toggleExpand}
+            expandedItems={expandedItems}
+            handleTableContextMenu={handleTableContextMenu}
+            generateSelectSQL={generateSelectSQL}
+          />
         ))}
+        {filteredData.length > 10 && (
+          <div style={{ padding: "8px 0", textAlign: "center", opacity: 0.7 }}>
+            <button
+              style={{
+                background: "none",
+                border: "none",
+                color: "inherit",
+                cursor: "pointer",
+                fontSize: "12px",
+              }}
+              onClick={() =>
+                alert(
+                  `${
+                    filteredData.length - 10
+                  } more databases not shown for performance.`
+                )
+              }
+            >
+              {filteredData.length - 10} more databases...
+            </button>
+          </div>
+        )}
       </TreeContainer>
 
       {contextMenuItems && (
@@ -811,6 +938,6 @@ function DatabaseExplorer({ onTableClick }) {
       )}
     </ExplorerContainer>
   );
-}
+});
 
 export default DatabaseExplorer;
