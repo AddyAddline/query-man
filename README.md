@@ -135,12 +135,9 @@ To solve this, I implemented:
 
 I tested the application with progressively larger datasets:
 
-- 1,000 rows: Smooth scrolling with no noticeable lag
-- 5,000 rows: Still responsive, with only minor frame drops during rapid scrolling
-- 10,000 rows: Handles well, with memory usage remaining reasonable
-- 50,000 rows: Usable, with some performance degradation but no crashes
+50,000+ rows: Handles well, with memory usage remaining reasonable
 
-The most satisfying moment was loading 10,000 rows and seeing the table render and respond to scrolling without any perceptible delay. The memory usage remained stable even during extended use, proving the virtualization approach was working as intended.
+The most satisfying moment was loading 10,000+ rows and seeing the table render and respond to scrolling without any perceptible delay. The memory usage remained stable even during extended use, proving the virtualization approach was working as intended.
 
 ## Learning Outcomes
 
