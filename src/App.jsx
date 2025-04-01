@@ -9,6 +9,7 @@ import useTabs from "./hooks/useTabs";
 import useLayout from "./hooks/useLayout";
 import { nanoid } from "nanoid";
 import Sidebar from "./components/Sidebar";
+import SaveQueryModal from "./components/SaveQueryModal";
 import {
   LoadingFallback,
   EditorFallback,
@@ -51,14 +52,12 @@ import {
 
 // Lazy load all heavy components
 const SQLEditor = lazy(() => import("./components/SQLEditor"));
-const DatabaseExplorer = lazy(() => import("./components/DatabaseExplorer"));
 const ResultTable = lazy(() => import("./components/ResultTable"));
 const ResultVisualization = lazy(() =>
   import("./components/ResultVisualization")
 );
 const QueryHistory = lazy(() => import("./components/QueryHistory"));
 const DownloadOptions = lazy(() => import("./components/DownloadOptions"));
-const KeyboardShortcuts = lazy(() => import("./components/KeyboardShortcuts"));
 
 function App() {
   const [currentQueryId, setCurrentQueryId] = useState(predefinedQueries[0].id);
@@ -411,12 +410,12 @@ function App() {
   const [saveQueryName, setSaveQueryName] = useState("");
 
   // Function to handle saving a query
-  const handleSaveQuery = () => {
-    if (!saveQueryName.trim()) return;
+  const handleSaveQuery = (name) => {
+    if (!name.trim()) return;
 
     // Here you would normally save to a database or localStorage
     // For this demo, we'll just show a confirmation
-    alert(`Query "${saveQueryName}" saved successfully!`);
+    alert(`Query "${name}" saved successfully!`);
     setShowSaveModal(false);
   };
 
@@ -1226,197 +1225,12 @@ function App() {
         </MobileHistoryOverlay>
       </AppContainer>
 
-      {/* Add Save Query modal */}
-      {showSaveModal && (
-        <div
-          style={{
-            position: "fixed",
-            top: 0,
-            left: 0,
-            width: "100%",
-            height: "100%",
-            backgroundColor: "rgba(0, 0, 0, 0.7)",
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-            zIndex: 1000,
-            backdropFilter: "blur(2px)",
-          }}
-        >
-          <div
-            style={{
-              backgroundColor: "var(--theme-surface)",
-              padding: "24px",
-              borderRadius: "8px",
-              width: "400px",
-              maxWidth: "95%",
-              boxShadow: "0 10px 25px rgba(0, 0, 0, 0.2)",
-              display: "flex",
-              flexDirection: "column",
-              gap: "20px",
-              border: "1px solid var(--theme-border)",
-              outline: "1px solid rgba(255, 255, 255, 0.1)",
-            }}
-          >
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                borderBottom: "1px solid var(--theme-border)",
-                paddingBottom: "16px",
-                marginBottom: "4px",
-              }}
-            >
-              <h3
-                style={{
-                  margin: 0,
-                  color: "var(--theme-text-primary)",
-                  fontSize: "18px",
-                  fontWeight: "600",
-                }}
-              >
-                Save Query
-              </h3>
-              <button
-                onClick={() => setShowSaveModal(false)}
-                style={{
-                  background: "transparent",
-                  border: "none",
-                  color: "var(--theme-text-secondary)",
-                  cursor: "pointer",
-                  width: "28px",
-                  height: "28px",
-                  borderRadius: "50%",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  fontSize: "18px",
-                  transition: "all 0.2s ease",
-                }}
-                onMouseOver={(e) => {
-                  e.target.style.backgroundColor = "rgba(0, 0, 0, 0.1)";
-                }}
-                onMouseOut={(e) => {
-                  e.target.style.backgroundColor = "transparent";
-                }}
-              >
-                ×
-              </button>
-            </div>
-
-            <div
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                gap: "10px",
-              }}
-            >
-              <label
-                style={{
-                  fontSize: "14px",
-                  color: "var(--theme-text-primary)",
-                  fontWeight: "500",
-                }}
-              >
-                Query Name:
-              </label>
-              <input
-                type="text"
-                value={saveQueryName}
-                onChange={(e) => setSaveQueryName(e.target.value)}
-                style={{
-                  padding: "10px 14px",
-                  fontSize: "14px",
-                  border: "1px solid var(--theme-border)",
-                  borderRadius: "6px",
-                  backgroundColor: "var(--theme-background)",
-                  color: "var(--theme-text-primary)",
-                  width: "100%",
-                  boxSizing: "border-box",
-                  boxShadow: "inset 0 1px 2px rgba(0, 0, 0, 0.05)",
-                  transition: "border-color 0.2s, box-shadow 0.2s",
-                  outline: "none",
-                }}
-                onFocus={(e) => {
-                  e.target.style.borderColor = "var(--theme-primary)";
-                  e.target.style.boxShadow =
-                    "0 0 0 3px rgba(76, 175, 80, 0.1), inset 0 1px 2px rgba(0, 0, 0, 0.05)";
-                }}
-                onBlur={(e) => {
-                  e.target.style.borderColor = "var(--theme-border)";
-                  e.target.style.boxShadow =
-                    "inset 0 1px 2px rgba(0, 0, 0, 0.05)";
-                }}
-                autoFocus
-              />
-            </div>
-
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "flex-end",
-                gap: "12px",
-                marginTop: "10px",
-                paddingTop: "16px",
-                borderTop: "1px solid var(--theme-border)",
-              }}
-            >
-              <button
-                onClick={() => setShowSaveModal(false)}
-                style={{
-                  padding: "8px 20px",
-                  backgroundColor: "transparent",
-                  color: "#dc3545",
-                  border: "1px solid #dc3545",
-                  borderRadius: "6px",
-                  fontSize: "14px",
-                  fontWeight: "500",
-                  cursor: "pointer",
-                  transition: "all 0.2s ease",
-                  minWidth: "80px",
-                }}
-                onMouseOver={(e) => {
-                  e.target.style.backgroundColor = "rgba(220, 53, 69, 0.08)";
-                  e.target.style.boxShadow = "0 1px 3px rgba(0, 0, 0, 0.1)";
-                }}
-                onMouseOut={(e) => {
-                  e.target.style.backgroundColor = "transparent";
-                  e.target.style.boxShadow = "none";
-                }}
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleSaveQuery}
-                style={{
-                  padding: "8px 20px",
-                  backgroundColor: "#28a745",
-                  color: "white",
-                  border: "none",
-                  borderRadius: "6px",
-                  fontSize: "14px",
-                  fontWeight: "500",
-                  cursor: "pointer",
-                  transition: "all 0.2s ease",
-                  boxShadow: "0 1px 3px rgba(0, 0, 0, 0.1)",
-                  minWidth: "80px",
-                }}
-                onMouseOver={(e) => {
-                  e.target.style.backgroundColor = "#218838";
-                  e.target.style.boxShadow = "0 2px 5px rgba(0, 0, 0, 0.15)";
-                }}
-                onMouseOut={(e) => {
-                  e.target.style.backgroundColor = "#28a745";
-                  e.target.style.boxShadow = "0 1px 3px rgba(0, 0, 0, 0.1)";
-                }}
-              >
-                Save
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <SaveQueryModal
+        isOpen={showSaveModal}
+        onClose={() => setShowSaveModal(false)}
+        onSave={handleSaveQuery}
+        initialName={saveQueryName}
+      />
     </ThemeProvider>
   );
 }
