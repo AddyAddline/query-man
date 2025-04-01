@@ -12,18 +12,16 @@ import SaveQueryModal from "./components/SaveQueryModal";
 import ResultsSection from "./components/ResultsSection";
 import EditorPanel from "./components/EditorPanel";
 import MobileHistoryPanel from "./components/MobileHistoryPanel";
+import TabsHeader from "./components/TabsHeader";
+import MobileToolbar from "./components/MobileToolbar";
+import LoadingErrorOverlay from "./components/LoadingErrorOverlay";
+import ResizableHandle from "./components/ResizableHandle";
+
 import {
-  LoadingFallback,
   AppContainer,
   MainContent,
   EditorResultsContainer,
-  NavTabs,
-  NavTab,
   SplitView,
-  ResizeHandle,
-  ErrorMessage,
-  MobileBar,
-  MobileButton,
   SidebarToggle,
 } from "./styles/AppStyles";
 
@@ -429,78 +427,17 @@ function App() {
 
           {/* New layout with optional tabs */}
           <EditorResultsContainer>
-            {layoutDirection === "tabbed" && (
-              <NavTabs role="tablist">
-                <NavTab
-                  $active={activePanel === "editor-panel"}
-                  role="tab"
-                  aria-controls="editor-panel"
-                  aria-selected={activePanel === "editor-panel"}
-                  onClick={() => handleTabClick("editor-panel")}
-                  className={activePanel === "editor-panel" ? "active-tab" : ""}
-                >
-                  <svg
-                    width="14"
-                    height="14"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    xmlns="http://www.w3.org/2000/svg"
-                  >
-                    <path
-                      d="M3 5h12M3 19h12M12 12H3M5 5v7M5 12v7M15 5h6M15 12h6M15 19h6"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                  </svg>
-                  Input
-                </NavTab>
-
-                {/* Dynamic output tabs in tabbed mode */}
-                {outputTabs.map((tab) => (
-                  <NavTab
-                    key={tab.id}
-                    $active={
-                      activePanel === "results-panel" &&
-                      activeOutputTabId === tab.id
-                    }
-                    role="tab"
-                    aria-controls="results-panel"
-                    aria-selected={
-                      activePanel === "results-panel" &&
-                      activeOutputTabId === tab.id
-                    }
-                    onClick={() => handleTabClick(tab.id)}
-                    className={
-                      activePanel === "results-panel" &&
-                      activeOutputTabId === tab.id
-                        ? "active-tab"
-                        : ""
-                    }
-                  >
-                    <svg
-                      width="14"
-                      height="14"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      xmlns="http://www.w3.org/2000/svg"
-                    >
-                      <path
-                        d="M3 3h18v18H3V3zm6 4h9M3 9h18M3 15h18M9 9v9"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      />
-                    </svg>
-                    {tab.name}
-                  </NavTab>
-                ))}
-              </NavTabs>
-            )}
+            {/* Tabs Header */}
+            <TabsHeader
+              layoutDirection={layoutDirection}
+              activePanel={activePanel}
+              activeOutputTabId={activeOutputTabId}
+              outputTabs={outputTabs}
+              handleTabClick={handleTabClick}
+            />
 
             <SplitView $direction={layoutDirection}>
+              {/* Editor Panel */}
               <EditorPanel
                 isFullScreen={isFullScreen}
                 layoutDirection={layoutDirection}
@@ -530,36 +467,16 @@ function App() {
                 setNewTabName={setNewTabName}
               />
 
-              {/* Resizable handle - Position matches layout direction */}
-              {layoutDirection !== "tabbed" &&
-                !isFullScreen &&
-                activeTabResults &&
-                outputTabs.length > 0 && (
-                  <ResizeHandle
-                    ref={resizeRef}
-                    $direction={layoutDirection}
-                    $position={
-                      layoutDirection === "vertical"
-                        ? `${splitSize}%`
-                        : `${splitSize}%`
-                    }
-                    onMouseDown={handleResizeStart}
-                    style={{
-                      left:
-                        layoutDirection === "horizontal"
-                          ? `${splitSize}%`
-                          : undefined,
-                      top:
-                        layoutDirection === "vertical"
-                          ? `${splitSize}%`
-                          : undefined,
-                      transform:
-                        layoutDirection === "horizontal"
-                          ? "translateX(-50%)"
-                          : undefined,
-                    }}
-                  />
-                )}
+              {/* Resizable handle */}
+              <ResizableHandle
+                layoutDirection={layoutDirection}
+                isFullScreen={isFullScreen}
+                activeTabResults={activeTabResults}
+                outputTabs={outputTabs}
+                splitSize={splitSize}
+                resizeRef={resizeRef}
+                handleResizeStart={handleResizeStart}
+              />
 
               {/* Results Section */}
               <ResultsSection
@@ -583,121 +500,21 @@ function App() {
               />
             </SplitView>
 
-            {/* Loading indicator and errors */}
-            {loading && (
-              <div
-                style={{
-                  position: "absolute",
-                  top: "50%",
-                  left: "50%",
-                  transform: "translate(-50%, -50%)",
-                  zIndex: 50,
-                }}
-              >
-                <LoadingFallback>Executing query...</LoadingFallback>
-              </div>
-            )}
-
-            {displayError && (
-              <div style={{ padding: "16px" }}>
-                <ErrorMessage>
-                  <svg
-                    width="20"
-                    height="20"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    xmlns="http://www.w3.org/2000/svg"
-                  >
-                    <path
-                      d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                    <path
-                      d="M12 8v4M12 16h.01"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                  </svg>
-                  {displayError}
-                </ErrorMessage>
-              </div>
-            )}
+            {/* Loading and Error overlays */}
+            <LoadingErrorOverlay loading={loading} error={displayError} />
           </EditorResultsContainer>
         </MainContent>
 
-        {/* Mobile bottom bar */}
-        <MobileBar>
-          <MobileButton
-            onClick={() => {
-              setSidebarOpen(!sidebarOpen);
-              setActiveSidebarTab("explorer");
-            }}
-            $active={sidebarOpen && activeSidebarTab === "explorer"}
-          >
-            <svg
-              width="20"
-              height="20"
-              viewBox="0 0 24 24"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="M3 4h18M3 12h18M3 20h18"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-              />
-            </svg>
-            Tables
-          </MobileButton>
-
-          <MobileButton onClick={() => setMobileHistoryOpen(true)}>
-            <svg
-              width="20"
-              height="20"
-              viewBox="0 0 24 24"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="M12 8v4l3 3m7-3a9 9 0 11-18 0 9 9 0 0118 0z"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-            History
-          </MobileButton>
-
-          <MobileButton
-            onClick={() => {
-              handleExecuteQuery(queryText);
-            }}
-          >
-            <svg
-              width="20"
-              height="20"
-              viewBox="0 0 24 24"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="M5 3l14 9-14 9V3z"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-            Run
-          </MobileButton>
-        </MobileBar>
+        {/* Mobile toolbar */}
+        <MobileToolbar
+          sidebarOpen={sidebarOpen}
+          activeSidebarTab={activeSidebarTab}
+          setSidebarOpen={setSidebarOpen}
+          setActiveSidebarTab={setActiveSidebarTab}
+          setMobileHistoryOpen={setMobileHistoryOpen}
+          handleExecuteQuery={handleExecuteQuery}
+          queryText={queryText}
+        />
 
         {/* Mobile history panel */}
         <MobileHistoryPanel
@@ -708,6 +525,7 @@ function App() {
         />
       </AppContainer>
 
+      {/* Save Query Modal */}
       <SaveQueryModal
         isOpen={showSaveModal}
         onClose={() => setShowSaveModal(false)}
