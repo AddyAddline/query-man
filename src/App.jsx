@@ -5,6 +5,7 @@ import Header from "./components/Header";
 import QuerySelector from "./components/QuerySelector";
 import { predefinedQueries } from "./data/mockData";
 import useSQLQuery from "./hooks/useSQLQuery";
+import useTabs from "./hooks/useTabs";
 import { nanoid } from "nanoid";
 import {
   LoadingFallback,
@@ -70,41 +71,53 @@ function App() {
   const [activeSidebarTab, setActiveSidebarTab] = useState("explorer");
   const [mobileHistoryOpen, setMobileHistoryOpen] = useState(false);
 
-  // Add new state for query tabs
-  const [queryTabs, setQueryTabs] = useState([
-    {
-      id: nanoid(),
-      name: "New Query",
-      queryId: predefinedQueries[0].id,
-      query: predefinedQueries[0].query,
-      renamed: false,
-    },
-  ]);
-  const [activeTabId, setActiveTabId] = useState(queryTabs[0].id);
+  // Use the custom SQL query hook
+  const {
+    results,
+    loading,
+    error: sqlError,
+    executionTime,
+    queryHistory,
+    executeQuery,
+    clearResults,
+  } = useSQLQuery();
 
-  // Add state for tab renaming
-  const [editingTabId, setEditingTabId] = useState(null);
-  const [newTabName, setNewTabName] = useState("");
-  const tabInputRef = useRef(null);
-
-  // Add state for output tabs
-  const [outputTabs, setOutputTabs] = useState([]);
-  const [activeOutputTabId, setActiveOutputTabId] = useState(null);
-
-  // Modify to store results per tab
-  const [tabResults, setTabResults] = useState({});
-
-  // Add state to track tab types (results or visualization)
-  const [tabTypes, setTabTypes] = useState({});
-
-  // Get the active tab's results
-  const activeTabResults = activeOutputTabId
-    ? tabResults[activeOutputTabId]
-    : null;
-
-  // Get the active tab
-  const activeTab =
-    queryTabs.find((tab) => tab.id === activeTabId) || queryTabs[0];
+  // Use our custom tabs hook
+  const {
+    queryTabs,
+    activeTabId,
+    activeTab,
+    editingTabId,
+    newTabName,
+    tabInputRef,
+    outputTabs,
+    activeOutputTabId,
+    activeTabResults,
+    tabTypes,
+    activePanel,
+    isUpdatingQuery,
+    isUpdatingTab,
+    setActiveTabId,
+    setActivePanel,
+    setQueryTabs,
+    addNewTab,
+    closeTab,
+    handleTabDoubleClick,
+    handleTabRename,
+    handleRenameBlur,
+    handleRenameKeyDown,
+    closeOutputTab,
+    createVisualizationTab,
+    handleTabClick,
+    clearAllOutputTabs,
+    updateQueryTab,
+    executeQueryAndCreateTab,
+    createTabFromHistory,
+    setNewTabName,
+  } = useTabs({
+    predefinedQueries,
+    executeQuery,
+  });
 
   // Track previous sidebar tab to restore after query execution
   const prevSidebarTabRef = useRef(activeSidebarTab);
@@ -112,10 +125,6 @@ function App() {
   useEffect(() => {
     prevSidebarTabRef.current = activeSidebarTab;
   }, [activeSidebarTab]);
-
-  // Tracking refs to prevent circular updates
-  const isUpdatingQuery = useRef(false);
-  const isUpdatingTab = useRef(false);
 
   // Sync the active tab with currentQueryId and queryText
   useEffect(() => {
@@ -146,20 +155,17 @@ function App() {
     // Find the active tab and check if query has changed
     const tab = queryTabs.find((t) => t.id === activeTabId);
     if (tab && (tab.query !== queryText || tab.queryId !== currentQueryId)) {
-      setQueryTabs((tabs) =>
-        tabs.map((t) =>
-          t.id === activeTabId
-            ? { ...t, query: queryText, queryId: currentQueryId }
-            : t
-        )
-      );
+      updateQueryTab(activeTabId, {
+        query: queryText,
+        queryId: currentQueryId,
+      });
     }
 
     // Clear the flag after the update
     setTimeout(() => {
       isUpdatingQuery.current = false;
     }, 0);
-  }, [queryText, currentQueryId, activeTabId, queryTabs]);
+  }, [queryText, currentQueryId, activeTabId, queryTabs, updateQueryTab]);
 
   // Modify the Set tab name based on query effect to respect manually renamed tabs
   useEffect(() => {
@@ -187,22 +193,9 @@ function App() {
     }
 
     if (tabName !== tab.name) {
-      setQueryTabs((tabs) =>
-        tabs.map((t) => (t.id === activeTabId ? { ...t, name: tabName } : t))
-      );
+      updateQueryTab(activeTabId, { name: tabName });
     }
-  }, [activeTabId, queryTabs]);
-
-  // Use the custom SQL query hook
-  const {
-    results,
-    loading,
-    error: sqlError,
-    executionTime,
-    queryHistory,
-    executeQuery,
-    clearResults,
-  } = useSQLQuery();
+  }, [activeTabId, queryTabs, updateQueryTab, isUpdatingTab, isUpdatingQuery]);
 
   // Find current query details
   const currentQuery = predefinedQueries.find((q) => q.id === currentQueryId);
@@ -218,7 +211,7 @@ function App() {
     if (customError) {
       setCustomError(null);
     }
-  }, [queryText]);
+  }, [queryText, customError]);
 
   // Add state to track if the query has been modified but not executed
   const [queryModified, setQueryModified] = useState(false);
@@ -232,20 +225,12 @@ function App() {
       const isRenamed = currentTab?.renamed || false;
 
       // Update the active tab with the new query
-      setQueryTabs((tabs) =>
-        tabs.map((tab) =>
-          tab.id === activeTabId
-            ? {
-                ...tab,
-                name: isRenamed ? tab.name : query.name,
-                queryId: queryId,
-                query: query.query,
-                // Keep the renamed flag
-                renamed: isRenamed,
-              }
-            : tab
-        )
-      );
+      updateQueryTab(activeTabId, {
+        name: isRenamed ? currentTab.name : query.name,
+        queryId: queryId,
+        query: query.query,
+        renamed: isRenamed,
+      });
 
       setCurrentQueryId(queryId);
       setQueryText(query.query);
@@ -257,69 +242,23 @@ function App() {
     }
   };
 
-  // Add a function to explicitly clear results
+  // Handle the clear results button click
   const handleClearResults = () => {
     // If in fullscreen mode, exit fullscreen when clearing results
     if (isFullScreen) {
       setIsFullScreen(false);
     }
 
-    // Show confirmation dialog that this will close all output tabs
-    const confirmClear = window.confirm(
-      "This will close all output tabs. Are you sure you want to continue?"
-    );
-    if (!confirmClear) return;
+    // Use the clearAllOutputTabs function from our hook
+    const success = clearAllOutputTabs();
 
-    // Clear all output tabs
-    setOutputTabs([]);
-    setActiveOutputTabId(null);
-
-    // Clear all tab results
-    setTabResults({});
-
-    // Clear all tab types
-    setTabTypes({});
-
-    clearResults();
+    // Only clear results if the user confirmed
+    if (success) {
+      clearResults();
+    }
   };
 
-  // Function to create a visualization tab
-  const createVisualizationTab = (sourceTabId) => {
-    // Find the source tab
-    const sourceTab = outputTabs.find((tab) => tab.id === sourceTabId);
-    if (!sourceTab || !tabResults[sourceTabId]) return;
-
-    // Create a new tab ID
-    const visualizationTabId = nanoid();
-
-    // Create a new visualization tab with reference to the source tab's data
-    const visualizationTab = {
-      id: visualizationTabId,
-      name: `${sourceTab.name} Visualization`,
-      queryId: sourceTab.queryId,
-      queryTabId: sourceTab.queryTabId,
-      sourceTabId: sourceTabId, // Reference to the source tab
-      timestamp: new Date(),
-    };
-
-    // Add the new tab and set it as active
-    setOutputTabs((prevTabs) => [...prevTabs, visualizationTab]);
-    setActiveOutputTabId(visualizationTabId);
-
-    // Mark this tab as a visualization tab
-    setTabTypes((prevTypes) => ({
-      ...prevTypes,
-      [visualizationTabId]: "visualization",
-    }));
-
-    // Copy the data from the source tab to this visualization tab
-    setTabResults((prevResults) => ({
-      ...prevResults,
-      [visualizationTabId]: prevResults[sourceTabId],
-    }));
-  };
-
-  // Update the handleExecuteQuery to reset queryModified
+  // Update the handleExecuteQuery to use our hook's functions
   const handleExecuteQuery = (query) => {
     // Clear any previous custom errors
     setCustomError(null);
@@ -335,48 +274,23 @@ function App() {
     if (matchingQuery) {
       // Get the current tab name to use for the output tab
       const currentTab = queryTabs.find((tab) => tab.id === activeTabId);
-      const outputTabName = `${currentTab.name} Output`;
-      const outputTabId = nanoid();
 
-      // Create a new output tab
-      const newOutputTab = {
-        id: outputTabId,
-        name: outputTabName,
-        queryId: matchingQuery.id,
-        queryTabId: activeTabId,
-        timestamp: new Date(),
-      };
-
-      // Add to output tabs and set as active
-      setOutputTabs((prevTabs) => [...prevTabs, newOutputTab]);
-      setActiveOutputTabId(outputTabId);
-
-      // Mark this as a results tab
-      setTabTypes((prevTypes) => ({
-        ...prevTypes,
-        [outputTabId]: "results",
-      }));
+      // Create a new output tab and get the callback to store results
+      const onQueryComplete = executeQueryAndCreateTab(
+        query,
+        matchingQuery.id,
+        currentTab.name
+      );
 
       // If the query matches a different predefined query, switch to that query
       if (matchingQuery.id !== currentQueryId) {
         setCurrentQueryId(matchingQuery.id);
       }
 
-      // Store the results in tabResults when they arrive
-      const onQueryComplete = (queryResults) => {
-        if (queryResults) {
-          setTabResults((prevResults) => ({
-            ...prevResults,
-            [outputTabId]: {
-              data: queryResults,
-              executionTime,
-            },
-          }));
-        }
-      };
-
       // Execute with the matching query ID to get correct results
-      executeQuery(query, matchingQuery.id, currentTab.name, onQueryComplete);
+      executeQuery(query, matchingQuery.id, currentTab.name, (queryResults) => {
+        onQueryComplete(queryResults, executionTime);
+      });
 
       // On mobile, close sidebar if open
       if (window.innerWidth <= 768 && sidebarOpen) {
@@ -399,73 +313,36 @@ function App() {
     }
   }, [currentQueryId]);
 
-  // Modify the history selection to respect renamed flag
+  // Modify the history selection to use our hook
   const handleHistorySelect = (historyItem, shouldExecute = false) => {
     // Clear any custom errors
     setCustomError(null);
 
-    // Verify the history item's query still matches a predefined query
-    const matchingQuery = predefinedQueries.find(
-      (q) => q.id === historyItem.queryId
-    );
+    // Create a new tab from history using our hook
+    const newTab = createTabFromHistory(historyItem);
 
-    if (matchingQuery) {
-      // Create a new tab for the history item
-      const newTab = {
-        id: nanoid(),
-        name: `${matchingQuery.name}`,
-        queryId: historyItem.queryId,
-        query: historyItem.query,
-        renamed: false,
-      };
-
-      // Add tab and make it active
-      setQueryTabs((prevTabs) => [...prevTabs, newTab]);
-      setActiveTabId(newTab.id);
-      setActivePanel("editor-panel");
-
+    if (newTab) {
       // Close mobile history panel if open
       setMobileHistoryOpen(false);
 
       // If shouldExecute is true, also run the query and create an output tab
       if (shouldExecute) {
-        // Generate a unique ID for the new output tab
-        const outputTabId = nanoid();
+        // Create a new output tab and get the callback to store results
+        const onQueryComplete = executeQueryAndCreateTab(
+          historyItem.query,
+          historyItem.queryId,
+          newTab.name
+        );
 
-        // Create a callback to handle the query results
-        const onQueryComplete = (queryResults) => {
-          if (queryResults) {
-            // Store the results in state
-            setTabResults((prevResults) => ({
-              ...prevResults,
-              [outputTabId]: {
-                data: queryResults,
-                executionTime: executionTime,
-              },
-            }));
-
-            // Create a new output tab
-            const newOutputTab = {
-              id: outputTabId,
-              name: `${matchingQuery.name} Results`,
-              queryId: historyItem.queryId,
-              sourceTabId: newTab.id,
-              timestamp: new Date().toISOString(),
-            };
-
-            // Add the new output tab and make it active
-            setOutputTabs((prevTabs) => [...prevTabs, newOutputTab]);
-            setActiveOutputTabId(outputTabId);
-            setActivePanel("results-panel");
-          }
-        };
-
-        // Execute the query with our callback
+        // Execute the query
         executeQuery(
           historyItem.query,
           historyItem.queryId,
           newTab.name,
-          onQueryComplete
+          (queryResults) => {
+            onQueryComplete(queryResults, executionTime);
+            setActivePanel("results-panel");
+          }
         );
       }
     } else {
@@ -476,7 +353,7 @@ function App() {
     }
   };
 
-  // Modify the handle table click to initialize with renamed flag
+  // Handle table click
   const handleTableClick = (tableName, customSQL) => {
     const newQuery = customSQL || `SELECT * FROM ${tableName} LIMIT 100;`;
 
@@ -504,9 +381,6 @@ function App() {
       setSidebarOpen(false);
     }
   };
-
-  // Track which panel is currently visible in tabbed mode
-  const [activePanel, setActivePanel] = useState("editor-panel");
 
   // Toggle between vertical and horizontal layout
   const [layoutDirection, setLayoutDirection] = useState("vertical"); // "vertical" or "horizontal"
@@ -641,184 +515,6 @@ function App() {
     };
   }, []);
 
-  // Add a new tab
-  const addNewTab = () => {
-    const newTab = {
-      id: nanoid(),
-      name: "New Query",
-      queryId: predefinedQueries[0].id,
-      query: predefinedQueries[0].query,
-      renamed: false,
-    };
-    setQueryTabs([...queryTabs, newTab]);
-    setActiveTabId(newTab.id);
-  };
-
-  // Close a tab
-  const closeTab = (tabId, event) => {
-    event.stopPropagation();
-    if (queryTabs.length === 1) {
-      // Don't close if it's the last tab
-      return;
-    }
-
-    const newTabs = queryTabs.filter((tab) => tab.id !== tabId);
-    setQueryTabs(newTabs);
-
-    // If closing the active tab, activate another one
-    if (tabId === activeTabId) {
-      setActiveTabId(newTabs[newTabs.length - 1].id);
-    }
-  };
-
-  // Handle starting tab rename
-  const handleTabDoubleClick = (tabId, currentName) => {
-    setEditingTabId(tabId);
-    setNewTabName(currentName);
-    // Focus the input field after it's rendered
-    setTimeout(() => {
-      if (tabInputRef.current) {
-        tabInputRef.current.focus();
-        tabInputRef.current.select();
-      }
-    }, 0);
-  };
-
-  // Handle tab name change
-  const handleTabRename = (e) => {
-    if (e) e.preventDefault();
-
-    if (editingTabId && newTabName.trim()) {
-      setQueryTabs((tabs) =>
-        tabs.map((tab) =>
-          tab.id === editingTabId
-            ? { ...tab, name: newTabName.trim(), renamed: true }
-            : tab
-        )
-      );
-    }
-
-    // Reset editing state
-    setEditingTabId(null);
-    setNewTabName("");
-  };
-
-  // Handle clicking outside to cancel renaming
-  const handleRenameBlur = () => {
-    handleTabRename();
-  };
-
-  // Handle keydown events for the rename input
-  const handleRenameKeyDown = (e) => {
-    if (e.key === "Enter") {
-      handleTabRename(e);
-    } else if (e.key === "Escape") {
-      setEditingTabId(null);
-      setNewTabName("");
-    }
-  };
-
-  // Update the closeOutputTab function to remove tabs properly
-  const closeOutputTab = (tabId, event) => {
-    if (event) event.stopPropagation();
-
-    // Show confirmation dialog
-    const confirmClose = window.confirm(
-      "Are you sure you want to close this tab?"
-    );
-    if (!confirmClose) return;
-
-    // Remove the output tab
-    setOutputTabs((tabs) => tabs.filter((tab) => tab.id !== tabId));
-
-    // Also remove this tab's results from tabResults
-    setTabResults((prevResults) => {
-      const newResults = { ...prevResults };
-      delete newResults[tabId];
-      return newResults;
-    });
-
-    // Also remove this tab from tabTypes
-    setTabTypes((prevTypes) => {
-      const newTypes = { ...prevTypes };
-      delete newTypes[tabId];
-      return newTypes;
-    });
-
-    // If closing the active tab, activate the most recent one
-    if (tabId === activeOutputTabId) {
-      const remainingTabs = outputTabs.filter((tab) => tab.id !== tabId);
-      if (remainingTabs.length > 0) {
-        // Find the most recent tab by timestamp
-        const mostRecentTab = remainingTabs.reduce((latest, current) =>
-          latest.timestamp > current.timestamp ? latest : current
-        );
-        setActiveOutputTabId(mostRecentTab.id);
-      } else {
-        setActiveOutputTabId(null);
-        // Clear results if there are no remaining tabs
-        clearResults();
-      }
-    }
-  };
-
-  // Update the tab click function to handle both nav tabs and output tabs
-  const handleTabClick = (tabId) => {
-    // Check if it's a main navigation tab
-    if (tabId === "editor-panel" || tabId === "results-panel") {
-      setActivePanel(tabId);
-    } else {
-      // First check if it's an output tab
-      const outputTab = outputTabs.find((tab) => tab.id === tabId);
-      if (outputTab) {
-        // It's an output tab
-        setActivePanel("results-panel");
-        setActiveOutputTabId(tabId);
-
-        // If we don't have results for this tab but we have the query info, re-run the query
-        if (!tabResults[tabId] && outputTab.queryId) {
-          // Find the original query
-          const query = predefinedQueries.find(
-            (q) => q.id === outputTab.queryId
-          );
-          if (query) {
-            const onQueryComplete = (queryResults) => {
-              if (queryResults) {
-                setTabResults((prevResults) => ({
-                  ...prevResults,
-                  [tabId]: {
-                    data: queryResults,
-                    executionTime: null,
-                  },
-                }));
-              }
-            };
-
-            // Re-execute the query to populate this tab's results
-            executeQuery(
-              query.query,
-              outputTab.queryId,
-              outputTab.name,
-              onQueryComplete
-            );
-          }
-        }
-      } else {
-        // It must be an input tab
-        setActivePanel("editor-panel");
-        setActiveTabId(tabId);
-      }
-    }
-  };
-
-  // Handle results double click for full screen
-  const handleResultsDoubleClick = (e) => {
-    // Only detect double clicks on the results toolbar, not on the content
-    if (e.target.closest(".results-toolbar")) {
-      toggleFullScreen();
-    }
-  };
-
   // Add state for sidebar width
   const [sidebarWidth, setSidebarWidth] = useState(250);
   const minSidebarWidth = 180;
@@ -900,6 +596,14 @@ function App() {
     const currentTab = queryTabs.find((tab) => tab.id === activeTabId);
     setSaveQueryName(currentTab?.name || "My Query");
     setShowSaveModal(true);
+  };
+
+  // Handle results double click for full screen
+  const handleResultsDoubleClick = (e) => {
+    // Only detect double clicks on the results toolbar, not on the content
+    if (e.target.closest(".results-toolbar")) {
+      toggleFullScreen();
+    }
   };
 
   return (

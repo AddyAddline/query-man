@@ -1,9 +1,6 @@
 import { useState, useCallback } from "react";
 import { mockResults } from "../data/mockData";
 
-/**
- * Custom hook for handling SQL query execution with error handling and loading states
- */
 function useSQLQuery() {
   // State for managing query execution
   const [results, setResults] = useState(null);
