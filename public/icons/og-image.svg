@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <defs>
+    <linearGradient id="bg-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#f8f9fa" />
+      <stop offset="100%" stop-color="#e5e8ec" />
+    </linearGradient>
+    <linearGradient id="logo-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#2e7d32" />
+      <stop offset="100%" stop-color="#1976d2" />
+    </linearGradient>
+    <linearGradient id="title-gradient" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#2e7d32" />
+      <stop offset="100%" stop-color="#1976d2" />
+    </linearGradient>
+    <pattern id="grid-pattern" width="30" height="30" patternUnits="userSpaceOnUse">
+      <path d="M 30 0 L 0 0 0 30" fill="none" stroke="#f0f4f8" stroke-width="1"/>
+    </pattern>
+  </defs>
+  
+  <!-- Background -->
+  <rect width="1200" height="630" fill="url(#bg-gradient)" />
+  <rect width="1200" height="630" fill="url(#grid-pattern)" />
+  
+  <!-- Logo -->
+  <g transform="translate(450, 200) scale(4)">
+    <!-- Database cylinder top -->
+    <ellipse cx="12" cy="5" rx="10" ry="3.5" fill="url(#logo-gradient)" />
+    
+    <!-- Database cylinder body -->
+    <path d="M22 5v10c0 1.933-4.477 3.5-10 3.5S2 16.933 2 15V5" fill="none" stroke="url(#logo-gradient)" stroke-width="2" />
+    
+    <!-- Middle line/separator -->
+    <path d="M22 10c0 1.933-4.477 3.5-10 3.5S2 11.933 2 10" fill="none" stroke="url(#logo-gradient)" stroke-width="1.5" stroke-opacity="0.8" />
+    
+    <!-- SQL text -->
+    <text x="6" y="15" fill="#ffffff" font-family="Arial, sans-serif" font-size="6.5" font-weight="bold">SQL</text>
+  </g>
+  
+  <!-- Title -->
+  <text x="600" y="420" fill="url(#title-gradient)" font-family="Arial, sans-serif" font-size="60" font-weight="bold" text-anchor="middle">Query Man</text>
+  
+  <!-- Subtitle -->
+  <text x="600" y="480" fill="#57606a" font-family="Arial, sans-serif" font-size="30" text-anchor="middle">Professional SQL Query Builder</text>
+</svg> 

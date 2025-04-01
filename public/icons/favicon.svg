@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32">
+  <defs>
+    <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#2e7d32" />
+      <stop offset="100%" stop-color="#1976d2" />
+    </linearGradient>
+  </defs>
+  <rect width="32" height="32" rx="6" fill="#ffffff" />
+  <g transform="translate(4, 5)">
+    <!-- Database cylinder top -->
+    <ellipse cx="12" cy="5" rx="10" ry="3.5" fill="url(#gradient)" />
+    
+    <!-- Database cylinder body -->
+    <path d="M22 5v10c0 1.933-4.477 3.5-10 3.5S2 16.933 2 15V5" fill="none" stroke="url(#gradient)" stroke-width="2" />
+    
+    <!-- Middle line/separator -->
+    <path d="M22 10c0 1.933-4.477 3.5-10 3.5S2 11.933 2 10" fill="none" stroke="url(#gradient)" stroke-width="1.5" stroke-opacity="0.8" />
+    
+    <!-- SQL text -->
+    <text x="6" y="15" fill="#ffffff" font-family="Arial, sans-serif" font-size="6.5" font-weight="bold">SQL</text>
+  </g>
+</svg> 
