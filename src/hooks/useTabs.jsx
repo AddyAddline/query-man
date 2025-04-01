@@ -364,6 +364,7 @@ const useTabs = ({ predefinedQueries, executeQuery }) => {
     setQueryTabs,
     setActiveOutputTabId,
     setTabResults,
+    setNewTabName,
     addNewTab,
     closeTab,
     handleTabDoubleClick,
