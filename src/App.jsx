@@ -6,6 +6,7 @@ import QuerySelector from "./components/QuerySelector";
 import { predefinedQueries } from "./data/mockData";
 import useSQLQuery from "./hooks/useSQLQuery";
 import useTabs from "./hooks/useTabs";
+import useLayout from "./hooks/useLayout";
 import { nanoid } from "nanoid";
 import {
   LoadingFallback,
@@ -67,9 +68,27 @@ const KeyboardShortcuts = lazy(() => import("./components/KeyboardShortcuts"));
 function App() {
   const [currentQueryId, setCurrentQueryId] = useState(predefinedQueries[0].id);
   const [queryText, setQueryText] = useState(predefinedQueries[0].query);
-  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [activeSidebarTab, setActiveSidebarTab] = useState("explorer");
   const [mobileHistoryOpen, setMobileHistoryOpen] = useState(false);
+
+  // Use the layout management hook
+  const {
+    layoutDirection,
+    isFullScreen,
+    splitSize,
+    resizeRef,
+    sidebarOpen,
+    sidebarWidth,
+    sidebarResizeRef,
+    setSidebarOpen,
+    setIsFullScreen,
+    toggleFullScreen,
+    toggleOutputMode,
+    handleResizeStart,
+    handleResultsDoubleClick,
+    handleSidebarResizeStart,
+    checkExitFullScreen,
+  } = useLayout();
 
   // Use the custom SQL query hook
   const {
@@ -258,6 +277,16 @@ function App() {
     }
   };
 
+  // Use the checkExitFullScreen function to exit fullscreen when results are cleared
+  useEffect(() => {
+    checkExitFullScreen(results);
+  }, [results, checkExitFullScreen]);
+
+  // Modified toggleOutputMode to pass the required parameters
+  const handleToggleOutputMode = () => {
+    toggleOutputMode(results, loading, setActivePanel);
+  };
+
   // Update the handleExecuteQuery to use our hook's functions
   const handleExecuteQuery = (query) => {
     // Clear any previous custom errors
@@ -382,200 +411,6 @@ function App() {
     }
   };
 
-  // Toggle between vertical and horizontal layout
-  const [layoutDirection, setLayoutDirection] = useState("vertical"); // "vertical" or "horizontal"
-
-  // Add state for full-screen mode
-  const [isFullScreen, setIsFullScreen] = useState(false);
-
-  // For resize functionality - adjust min and max to be more reasonable
-  const [splitSize, setSplitSize] = useState(60); // percentage - default to editor being larger
-  const resizeRef = useRef(null);
-  const isDraggingRef = useRef(false);
-  const startPosRef = useRef(0);
-  const startSizeRef = useRef(0);
-
-  // Toggle layout direction
-  const toggleLayoutDirection = () => {
-    // Exit full screen mode first if enabled
-    if (isFullScreen) {
-      setIsFullScreen(false);
-    }
-
-    setLayoutDirection((prev) =>
-      prev === "vertical" ? "horizontal" : "vertical"
-    );
-  };
-
-  // Toggle full-screen mode for results
-  const toggleFullScreen = () => {
-    setIsFullScreen(!isFullScreen);
-  };
-
-  // Toggle the output display mode
-  const toggleOutputMode = () => {
-    // Exit full screen mode first if enabled
-    if (isFullScreen) {
-      setIsFullScreen(false);
-    }
-
-    // Then toggle the layout direction
-    toggleLayoutDirection();
-
-    // When switching to horizontal, make sure we're displaying results
-    if (layoutDirection === "vertical" && results && !loading) {
-      setActivePanel("results-panel");
-    }
-  };
-
-  // Handle resize start
-  const handleResizeStart = (e) => {
-    isDraggingRef.current = true;
-    document.body.style.cursor =
-      layoutDirection === "vertical" ? "row-resize" : "col-resize";
-    document.body.style.userSelect = "none";
-    startPosRef.current =
-      layoutDirection === "vertical" ? e.clientY : e.clientX;
-    startSizeRef.current = splitSize;
-
-    // Add event listeners
-    document.addEventListener("mousemove", handleResize);
-    document.addEventListener("mouseup", handleResizeEnd);
-  };
-
-  // Handle resize with better boundaries
-  const handleResize = (e) => {
-    if (!isDraggingRef.current) return;
-
-    const container = resizeRef.current.parentElement;
-    const containerRect = container.getBoundingClientRect();
-
-    let newSplitSize;
-
-    if (layoutDirection === "vertical") {
-      const deltaY = e.clientY - startPosRef.current;
-      const containerHeight = containerRect.height;
-
-      // Stricter minimum sizes in pixels to ensure elements fit properly
-      const minSizeInPixels = 200; // minimum pixels for editor
-      const maxSizeInPixels = containerHeight - 200; // ensure result panel has at least 200px
-
-      const currentSizeInPixels =
-        (containerHeight * startSizeRef.current) / 100;
-      const newSizeInPixels = currentSizeInPixels + deltaY;
-
-      // Convert back to percentage but with pixel-based boundaries
-      if (newSizeInPixels < minSizeInPixels) {
-        newSplitSize = (minSizeInPixels / containerHeight) * 100;
-      } else if (newSizeInPixels > maxSizeInPixels) {
-        newSplitSize = (maxSizeInPixels / containerHeight) * 100;
-      } else {
-        newSplitSize = (newSizeInPixels / containerHeight) * 100;
-      }
-    } else {
-      const deltaX = e.clientX - startPosRef.current;
-      const containerWidth = containerRect.width;
-
-      // Stricter minimum sizes in pixels for horizontal layout
-      const minSizeInPixels = 300; // minimum pixels for editor
-      const maxSizeInPixels = containerWidth - 300; // ensure result panel has at least 300px
-
-      const currentSizeInPixels = (containerWidth * startSizeRef.current) / 100;
-      const newSizeInPixels = currentSizeInPixels + deltaX;
-
-      // Convert back to percentage but with pixel-based boundaries
-      if (newSizeInPixels < minSizeInPixels) {
-        newSplitSize = (minSizeInPixels / containerWidth) * 100;
-      } else if (newSizeInPixels > maxSizeInPixels) {
-        newSplitSize = (maxSizeInPixels / containerWidth) * 100;
-      } else {
-        newSplitSize = (newSizeInPixels / containerWidth) * 100;
-      }
-    }
-
-    setSplitSize(newSplitSize);
-  };
-
-  // Handle resize end
-  const handleResizeEnd = () => {
-    isDraggingRef.current = false;
-    document.body.style.cursor = "";
-    document.body.style.userSelect = "";
-
-    // Remove event listeners
-    document.removeEventListener("mousemove", handleResize);
-    document.removeEventListener("mouseup", handleResizeEnd);
-  };
-
-  // Effect to clean up resize event listeners
-  useEffect(() => {
-    return () => {
-      document.removeEventListener("mousemove", handleResize);
-      document.removeEventListener("mouseup", handleResizeEnd);
-    };
-  }, []);
-
-  // Add state for sidebar width
-  const [sidebarWidth, setSidebarWidth] = useState(250);
-  const minSidebarWidth = 180;
-  const maxSidebarWidth = 450;
-  const sidebarResizeRef = useRef(null);
-  const isSidebarResizingRef = useRef(false);
-  const startSidebarPosRef = useRef(0);
-  const startSidebarWidthRef = useRef(0);
-
-  // Handle sidebar resize start
-  const handleSidebarResizeStart = (e) => {
-    e.preventDefault();
-    isSidebarResizingRef.current = true;
-    document.body.style.cursor = "col-resize";
-    document.body.style.userSelect = "none";
-    startSidebarPosRef.current = e.clientX;
-    startSidebarWidthRef.current = sidebarWidth;
-
-    // Add event listeners
-    document.addEventListener("mousemove", handleSidebarResize);
-    document.addEventListener("mouseup", handleSidebarResizeEnd);
-  };
-
-  // Handle sidebar resize
-  const handleSidebarResize = (e) => {
-    if (!isSidebarResizingRef.current) return;
-
-    const deltaX = e.clientX - startSidebarPosRef.current;
-    const newWidth = Math.min(
-      Math.max(minSidebarWidth, startSidebarWidthRef.current + deltaX),
-      maxSidebarWidth
-    );
-    setSidebarWidth(newWidth);
-  };
-
-  // Handle sidebar resize end
-  const handleSidebarResizeEnd = () => {
-    isSidebarResizingRef.current = false;
-    document.body.style.cursor = "";
-    document.body.style.userSelect = "";
-
-    // Remove event listeners
-    document.removeEventListener("mousemove", handleSidebarResize);
-    document.removeEventListener("mouseup", handleSidebarResizeEnd);
-  };
-
-  // Add cleanup for sidebar resize event listeners
-  useEffect(() => {
-    return () => {
-      document.removeEventListener("mousemove", handleSidebarResize);
-      document.removeEventListener("mouseup", handleSidebarResizeEnd);
-    };
-  }, []);
-
-  // Effect to exit fullscreen mode when results are cleared
-  useEffect(() => {
-    if (!results && isFullScreen) {
-      setIsFullScreen(false);
-    }
-  }, [results, isFullScreen]);
-
   // Add state for save query modal
   const [showSaveModal, setShowSaveModal] = useState(false);
   const [saveQueryName, setSaveQueryName] = useState("");
@@ -596,14 +431,6 @@ function App() {
     const currentTab = queryTabs.find((tab) => tab.id === activeTabId);
     setSaveQueryName(currentTab?.name || "My Query");
     setShowSaveModal(true);
-  };
-
-  // Handle results double click for full screen
-  const handleResultsDoubleClick = (e) => {
-    // Only detect double clicks on the results toolbar, not on the content
-    if (e.target.closest(".results-toolbar")) {
-      toggleFullScreen();
-    }
   };
 
   return (
@@ -1075,7 +902,7 @@ function App() {
                     </FullScreenButton>
 
                     <LayoutToggle
-                      onClick={toggleOutputMode}
+                      onClick={handleToggleOutputMode}
                       title={
                         layoutDirection === "vertical"
                           ? "Switch to side-by-side view"
