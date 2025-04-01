@@ -8,17 +8,12 @@ import useSQLQuery from "./hooks/useSQLQuery";
 import useTabs from "./hooks/useTabs";
 import useLayout from "./hooks/useLayout";
 import { nanoid } from "nanoid";
+import Sidebar from "./components/Sidebar";
 import {
   LoadingFallback,
   EditorFallback,
   AppContainer,
   MainContent,
-  Sidebar,
-  SidebarResizeHandle,
-  SidebarSections,
-  SidebarTabs,
-  SidebarTab,
-  SidebarContent,
   EditorResultsContainer,
   NavTabs,
   NavTab,
@@ -444,53 +439,17 @@ function App() {
 
         <MainContent>
           {/* Database explorer sidebar */}
-          <Sidebar $isOpen={sidebarOpen} $width={`${sidebarWidth}px`}>
-            <SidebarSections>
-              <SidebarTabs>
-                <SidebarTab
-                  $active={activeSidebarTab === "explorer"}
-                  onClick={() => setActiveSidebarTab("explorer")}
-                >
-                  Database Explorer
-                </SidebarTab>
-                <SidebarTab
-                  $active={activeSidebarTab === "history"}
-                  onClick={() => setActiveSidebarTab("history")}
-                >
-                  Query History
-                </SidebarTab>
-              </SidebarTabs>
-
-              <SidebarContent $active={activeSidebarTab === "explorer"}>
-                <Suspense
-                  fallback={
-                    <LoadingFallback>Loading explorer...</LoadingFallback>
-                  }
-                >
-                  <DatabaseExplorer onTableClick={handleTableClick} />
-                </Suspense>
-              </SidebarContent>
-
-              <SidebarContent $active={activeSidebarTab === "history"}>
-                <Suspense
-                  fallback={
-                    <LoadingFallback>Loading history...</LoadingFallback>
-                  }
-                >
-                  <QueryHistory
-                    history={queryHistory}
-                    onSelect={handleHistorySelect}
-                  />
-                </Suspense>
-              </SidebarContent>
-            </SidebarSections>
-
-            {/* Add resize handle for sidebar */}
-            <SidebarResizeHandle
-              onMouseDown={handleSidebarResizeStart}
-              ref={sidebarResizeRef}
-            />
-          </Sidebar>
+          <Sidebar
+            sidebarWidth={sidebarWidth}
+            sidebarOpen={sidebarOpen}
+            activeSidebarTab={activeSidebarTab}
+            setActiveSidebarTab={setActiveSidebarTab}
+            handleSidebarResizeStart={handleSidebarResizeStart}
+            sidebarResizeRef={sidebarResizeRef}
+            handleTableClick={handleTableClick}
+            queryHistory={queryHistory}
+            handleHistorySelect={handleHistorySelect}
+          />
 
           {/* Mobile sidebar toggle */}
           <SidebarToggle
