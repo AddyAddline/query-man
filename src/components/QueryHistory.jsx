@@ -168,7 +168,7 @@ const QueryHistory = memo(
       <HistoryContainer>
         <HistoryList>
           {history.map((item, index) => (
-            <HistoryItem key={index} onClick={() => onSelect(item)}>
+            <HistoryItem key={index} onClick={() => onSelect(item, false)}>
               <QueryIcon>
                 <svg
                   width="16"
@@ -214,7 +214,7 @@ const QueryHistory = memo(
                   title="Run query"
                   onClick={(e) => {
                     e.stopPropagation();
-                    onSelect(item);
+                    onSelect(item, true);
                   }}
                 >
                   <svg

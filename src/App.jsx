@@ -1065,7 +1065,6 @@ function App() {
     queryHistory,
     executeQuery,
     clearResults,
-    selectFromHistory,
   } = useSQLQuery();
 
   // Find current query details
@@ -1264,7 +1263,7 @@ function App() {
   }, [currentQueryId]);
 
   // Modify the history selection to respect renamed flag
-  const handleHistorySelect = (historyItem) => {
+  const handleHistorySelect = (historyItem, shouldExecute = false) => {
     // Clear any custom errors
     setCustomError(null);
 
@@ -1283,20 +1282,55 @@ function App() {
         renamed: false,
       };
 
-      setQueryTabs([...queryTabs, newTab]);
+      // Add tab and make it active
+      setQueryTabs((prevTabs) => [...prevTabs, newTab]);
       setActiveTabId(newTab.id);
+      setActivePanel("editor-panel");
 
       // Close mobile history panel if open
       setMobileHistoryOpen(false);
 
-      // Execute the query again but maintain the history tab selection
-      const activeTab = prevSidebarTabRef.current;
-      selectFromHistory(historyItem);
+      // If shouldExecute is true, also run the query and create an output tab
+      if (shouldExecute) {
+        // Generate a unique ID for the new output tab
+        const outputTabId = nanoid();
 
-      // Restore the previous active sidebar tab
-      setTimeout(() => {
-        setActiveSidebarTab(activeTab);
-      }, 0);
+        // Create a callback to handle the query results
+        const onQueryComplete = (queryResults) => {
+          if (queryResults) {
+            // Store the results in state
+            setTabResults((prevResults) => ({
+              ...prevResults,
+              [outputTabId]: {
+                data: queryResults,
+                executionTime: executionTime,
+              },
+            }));
+
+            // Create a new output tab
+            const newOutputTab = {
+              id: outputTabId,
+              name: `${matchingQuery.name} Results`,
+              queryId: historyItem.queryId,
+              sourceTabId: newTab.id,
+              timestamp: new Date().toISOString(),
+            };
+
+            // Add the new output tab and make it active
+            setOutputTabs((prevTabs) => [...prevTabs, newOutputTab]);
+            setActiveOutputTabId(outputTabId);
+            setActivePanel("results-panel");
+          }
+        };
+
+        // Execute the query with our callback
+        executeQuery(
+          historyItem.query,
+          historyItem.queryId,
+          newTab.name,
+          onQueryComplete
+        );
+      }
     } else {
       // This would be rare but could happen if predefined queries were changed
       setCustomError(
